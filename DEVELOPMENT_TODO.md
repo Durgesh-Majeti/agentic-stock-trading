@@ -1,7 +1,7 @@
 # Development Todo List
 
 **Project**: Agentic Stock Trading System  
-**Version**: 1.0  
+**Version**: 1.1.0  
 **Last Updated**: January 2025
 
 ---
@@ -115,25 +115,51 @@ This todo list follows the logical development order based on dependencies and s
 ### 2.5 News Sources Integration (For Sentiment Analysis) ✅ (COMPLETE)
 - [x] News fetcher module (`data_sources/news_fetcher.py`)
   - [x] RSS feed parser (feedparser integration)
-  - [x] Economic Times RSS integration
-  - [x] Moneycontrol RSS integration
-  - [x] Business Standard RSS integration
-  - [x] NSE announcement fetcher
-  - [x] Article content extraction and cleaning
+  - [x] Economic Times RSS integration (markets, economy, policy)
+  - [x] Moneycontrol RSS integration (latest, markets)
+  - [x] Business Standard RSS integration (markets, economy, companies)
+  - [x] Livemint RSS integration
+  - [x] Financial Express RSS integration
+  - [x] BSE corporate announcements RSS feed (replaced NSE API)
+  - [x] Yahoo Finance RSS integration
+  - [x] Article content extraction and HTML cleaning
+  - [x] Date parsing with timezone normalization (naive UTC)
   - [x] Source configuration management
   - [x] Rate limiting and error handling
-  - [x] Article deduplication
+  - [x] Article deduplication by URL
 - [x] News source configuration (`config/news_sources.py`)
-  - [x] Source definitions and URLs
+  - [x] 12 active news sources configured
+  - [x] Source definitions with URLs and categories
   - [x] Fetch frequency configuration
   - [x] Source activation/deactivation
-  - [x] Multiple Indian news sources configured
+  - [x] BSE RSS feed configuration
+  - [x] Helper functions for source management
 - [x] Database migration script (`scripts/migrate_add_sentiment_tables.py`)
-  - [x] news_articles table
-  - [x] sentiment_scores table
-  - [x] macro_stock_sentiment table
+  - [x] news_articles table with indexes
+  - [x] sentiment_scores table with indexes
+  - [x] macro_stock_sentiment table with indexes
   - [x] news_sources table
-  - [x] All indexes created
+  - [x] All active sources inserted automatically
+- [x] News fetch and store script (`scripts/fetch_and_store_news.py`)
+  - [x] Per-source tracking for efficient incremental fetching
+  - [x] Multiple operation modes (incremental, update-recent, force-refresh)
+  - [x] Bulk database operations
+  - [x] URL-based deduplication
+  - [x] Date range filtering
+  - [x] Timezone normalization (naive UTC)
+  - [x] Source status monitoring
+- [x] News source update script (`scripts/update_news_sources.py`)
+  - [x] Add missing sources to database
+  - [x] Update existing source configurations
+- [x] RSS feed validation script (`scripts/validate_rss_urls.py`)
+  - [x] URL accessibility checking
+  - [x] RSS parsing validation
+  - [x] Article count reporting
+- [x] Sentiment repository enhancements (`database/repositories/sentiment_repo.py`)
+  - [x] Per-source tracking methods
+  - [x] Bulk operations for articles
+  - [x] Source status monitoring
+  - [x] Smart start date calculation per source
 - [x] News fetcher tests (`tests/test_news_fetcher.py`)
 
 ---
@@ -438,6 +464,10 @@ This todo list follows the logical development order based on dependencies and s
 - [x] Configuration documentation
 - [x] Deployment documentation
 - [x] Sentiment Analysis System documentation
+- [x] News Fetching and Storage guide (comprehensive)
+- [x] Git Workflow guide
+- [x] Documentation consolidation (merged redundant files)
+- [x] Documentation index updated
 - [ ] Code documentation (docstrings)
 - [ ] API reference (auto-generated)
 
@@ -487,7 +517,7 @@ This todo list follows the logical development order based on dependencies and s
   - Ollama service
   - Technical indicators
   - Core service skeletons
-  - **Sentiment Repository** - Complete CRUD operations for news and sentiment
+  - **Sentiment Repository** - Complete CRUD operations for news and sentiment with per-source tracking
 - **Phase 2.3 Complete**: yfinance Integration (Historical)
   - yfinance data fetcher with Nifty 500 symbol list support
   - Historical data backfill script with advanced options
@@ -502,12 +532,23 @@ This todo list follows the logical development order based on dependencies and s
   - Batch fetching support
   - Unit tests
 - **Phase 2.5 Complete**: News Sources Integration (For Sentiment Analysis)
-  - News fetcher module with RSS parsing
-  - 10+ Indian news sources configured (Economic Times, Moneycontrol, Business Standard, etc.)
-  - NSE corporate announcements fetcher
+  - News fetcher module with RSS parsing (12 active sources)
+  - BSE corporate announcements RSS feed (replaced NSE API)
   - Article content extraction and deduplication
+  - Per-source tracking for efficient incremental fetching
+  - News fetch and store script with multiple operation modes
+  - Timezone normalization (naive UTC)
   - Database migration script for sentiment tables
+  - News source update script
+  - RSS feed validation script
   - Comprehensive test suite
+- **Documentation Complete (v1.1.0)**:
+  - Merged 3 news documentation files into comprehensive guide
+  - Updated all NSE references to BSE
+  - Removed 7 redundant documentation files
+  - Added Git workflow guide
+  - Updated documentation index
+  - Enhanced troubleshooting guides
 
 ### In Progress 🚧
 - None currently
@@ -515,8 +556,10 @@ This todo list follows the logical development order based on dependencies and s
 ### Pending ⏳
 - Phase 2.1: Shoonya API Integration (Primary)
 - Phase 2.2: Upstox API Integration (Backup)
-- Phase 2.5: News Sources Integration (For Sentiment Analysis)
 - Phase 3: Agent Implementation (including News Sentiment Analyst)
+  - Base agent framework
+  - All 5 agents (Database Librarian, Data Scraper, Strategy Specialist, Telegram Assistant, News Sentiment Analyst)
+  - Portfolio Guardian (Agent #6)
 - Phase 4-10: All remaining phases
 
 ---
@@ -546,4 +589,5 @@ This todo list follows the logical development order based on dependencies and s
 
 ---
 
-**Last Updated**: January 2025
+**Last Updated**: January 2025  
+**Current Version**: 1.1.0
