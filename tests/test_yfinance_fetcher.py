@@ -16,11 +16,11 @@ def yfinance_fetcher():
 
 @pytest.fixture
 def sample_csv_content():
-    """Sample CSV content for Nifty 500 list."""
-    return """Symbol,Company Name,Sector
-RELIANCE,Reliance Industries Ltd,Energy
-TCS,Tata Consultancy Services Ltd,Information Technology
-HDFCBANK,HDFC Bank Ltd,Financial Services"""
+    """Sample CSV content for Nifty 500 list - NSE actual format."""
+    return """Company Name,Industry,Symbol,Series,ISIN Code
+Reliance Industries Ltd,Energy,RELIANCE,EQ,INE002A01018
+Tata Consultancy Services Ltd,Information Technology,TCS,EQ,INE467B01029
+HDFC Bank Ltd,Financial Services,HDFCBANK,EQ,INE040A01026"""
 
 
 @pytest.fixture
