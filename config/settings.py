@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     ollama_chatbot_model: str = "gemma2:2b-instruct-q4_K_M"  # Telegram assistant model (quantized for speed)
     ollama_chatbot_fallback: str = "phi3:mini"  # Fallback for chatbot
     ollama_guardian_model: str = "deepseek-r1:7b"  # Portfolio guardian model
+    ollama_news_sentiment_model: str = "deepseek-r1:7b"  # News sentiment analysis model
+    ollama_news_sentiment_fallback: str = "qwen2.5:7b"  # Fallback for news sentiment
     
     # Telegram Bot
     telegram_bot_token: str = ""

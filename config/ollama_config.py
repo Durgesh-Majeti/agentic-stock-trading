@@ -39,6 +39,10 @@ class OllamaModelConfig:
                 "primary": settings.ollama_chatbot_model,
                 "fallback": settings.ollama_chatbot_fallback,
             },
+            ModelRole.NEWS_SENTIMENT: {
+                "primary": settings.ollama_news_sentiment_model,
+                "fallback": settings.ollama_news_sentiment_fallback,
+            },
             ModelRole.GUARDIAN: {
                 "primary": settings.ollama_guardian_model,
                 "fallback": settings.ollama_strategy_fallback,  # Use strategy fallback
