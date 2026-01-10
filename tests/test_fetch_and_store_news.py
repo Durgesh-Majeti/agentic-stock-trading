@@ -97,9 +97,14 @@ class TestFilterArticlesByDate:
             {'title': 'Article 1', 'published_date': datetime.now()},
             {'title': 'Article 2'}  # No date
         ]
+        # When no filters, all articles are returned (including those without dates)
         result = filter_articles_by_date(articles)
-        assert len(result) == 1
-        assert result[0]['title'] == 'Article 1'
+        assert len(result) == 2  # Both articles returned when no filters
+        
+        # Test with filters - articles without dates should be excluded
+        result_filtered = filter_articles_by_date(articles, start_date=datetime.now() - timedelta(days=1))
+        assert len(result_filtered) == 1
+        assert result_filtered[0]['title'] == 'Article 1'
     
     def test_empty_list(self):
         """Test with empty list."""

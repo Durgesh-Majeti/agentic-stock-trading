@@ -114,8 +114,8 @@ class TestTradeRepository:
             sample_stock.id, None, OrderType.BUY, 10, 100.0, 98.0, 104.0
         )
         
-        closed = repo.close_trade(trade.id, 98.0, TradeStatus.STOP_LOSS)
-        assert closed.status == TradeStatus.STOP_LOSS
+        closed = repo.close_trade(trade.id, 98.0, TradeStatus.STOP_LOSS_HIT)
+        assert closed.status == TradeStatus.STOP_LOSS_HIT
     
     def test_get_recent_trades(self, repo, sample_stock):
         """Test getting recent trades."""
