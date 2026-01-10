@@ -210,6 +210,23 @@ This documentation set provides comprehensive guidance for **creating, maintaini
 ---
 
 ### 11. [Status and Changelog](11_STATUS_AND_CHANGELOG.md)
+
+### 12. [News Fetching and Storage](12_NEWS_FETCHING_AND_STORAGE.md)
+**Purpose**: Complete guide to news fetching, storage, and per-source tracking
+
+**Contents**:
+- Per-source tracking system
+- Repository methods and usage
+- RSS feed status and validation
+- Performance optimization
+- Monitoring and troubleshooting
+- Command reference
+
+**Use When**:
+- Setting up news fetching
+- Understanding per-source tracking
+- Troubleshooting fetch issues
+- Monitoring source status
 **Purpose**: Current project status, recent changes, and changelog
 
 **Contents**:
@@ -354,40 +371,6 @@ This documentation set provides comprehensive guidance for **creating, maintaini
 - Tracking progress
 - Understanding dependencies
 
-### [Phase 2 Status](../PHASE2_STATUS.md)
-**Purpose**: Detailed status of Phase 2.3 & 2.4 implementation
-
-**Contents**:
-- Completed components
-- Usage examples
-- Technical details
-- Testing status
-- Known issues and solutions
-
-**Use When**:
-- Understanding current data source implementation
-- Using historical data backfill
-- Troubleshooting backfill issues
-
-### [Phase 1 & 2 Completion Summary](../PHASE1_PHASE2_SENTIMENT_COMPLETE.md)
-**Purpose**: Complete summary of Phase 1 & Phase 2 completion with sentiment analysis
-
-**Contents**:
-- Phase 1 completion details (including sentiment repository)
-- Phase 2.5 news sources integration
-- Files created and updated
-- Key features implemented
-- Usage examples
-- Database schema details
-- Migration instructions
-- Next steps for Phase 3
-
-**Use When**:
-- Understanding what's been completed
-- Reviewing implementation details
-- Planning Phase 3 development
-- Setting up sentiment analysis infrastructure
-
 ---
 
 ### [Quick Start Guide](../QUICK_START.md)
@@ -466,7 +449,9 @@ This documentation set provides comprehensive guidance for **creating, maintaini
 **Maintenance**: [08_MAINTENANCE_AND_UPGRADE.md](08_MAINTENANCE_AND_UPGRADE.md)  
 **Sentiment Analysis**: [09_SENTIMENT_ANALYSIS_SYSTEM.md](09_SENTIMENT_ANALYSIS_SYSTEM.md)  
 **Free Sources**: [10_FREE_SENTIMENT_SOURCES.md](10_FREE_SENTIMENT_SOURCES.md)  
-**Status & Changelog**: [11_STATUS_AND_CHANGELOG.md](11_STATUS_AND_CHANGELOG.md)
+**Status & Changelog**: [11_STATUS_AND_CHANGELOG.md](11_STATUS_AND_CHANGELOG.md)  
+**News Fetching**: [12_NEWS_FETCHING_AND_STORAGE.md](12_NEWS_FETCHING_AND_STORAGE.md)  
+**News Fetching**: [12_NEWS_FETCHING_AND_STORAGE.md](12_NEWS_FETCHING_AND_STORAGE.md)
 
 ### By Component
 
@@ -566,11 +551,13 @@ This documentation set provides comprehensive guidance for **creating, maintaini
 
 **Phase 2.5: News Sources Integration** (100% Complete)
 - News fetcher module with RSS parsing (`data_sources/news_fetcher.py`)
-- 10+ Indian news sources configured (Economic Times, Moneycontrol, Business Standard, etc.)
-- NSE corporate announcements fetcher
+- 12 active news sources configured (Economic Times, Moneycontrol, Business Standard, BSE, etc.)
+- BSE corporate announcements RSS feed (replaces NSE API)
 - Article content extraction and deduplication
+- Per-source tracking for efficient incremental fetching
 - News source configuration (`config/news_sources.py`)
 - Database migration script for sentiment tables
+- News fetch and store script (`scripts/fetch_and_store_news.py`)
 - Comprehensive test suite (`tests/test_news_fetcher.py`)
 
 ### 🚧 In Progress
@@ -588,18 +575,21 @@ This documentation set provides comprehensive guidance for **creating, maintaini
 
 - ✅ **Phase 1 & 2 Complete**: All foundation and data source components implemented
 - ✅ **Sentiment Analysis Infrastructure**: Complete database models, repository, and news fetching
-- ✅ **News Fetcher Module**: RSS parsing for 10+ Indian financial news sources
+- ✅ **News Fetcher Module**: RSS parsing for 12 active Indian financial news sources
 - ✅ **Sentiment Repository**: Full CRUD operations for articles, sentiment scores, and macro mappings
 - ✅ **Database Migration**: Script to create sentiment analysis tables
-- ✅ **News Source Configuration**: 10+ sources configured with fetch frequencies
+- ✅ **News Source Configuration**: 12 sources configured (including BSE RSS feed)
+- ✅ **Per-Source Tracking**: Efficient incremental fetching with timestamp tracking
+- ✅ **News Fetch Script**: `fetch_and_store_news.py` with multiple operation modes
 - ✅ **Comprehensive Tests**: Test suite for news fetcher module
-- ✅ **Documentation**: Complete sentiment analysis system documentation
+- ✅ **Documentation**: Complete sentiment analysis and news fetching documentation
 - ✅ **Free Sources Guide**: Comprehensive guide to free news sources and sentiment tools
 - ✅ Added Sentiment Analysis System documentation
 - ✅ Designed News Sentiment Analyst agent (Agent #5)
 - ✅ Documented macro news propagation methodology
 - ✅ Added sentiment analysis database schema
 - ✅ Integrated sentiment analysis with Strategy Specialist
+- ✅ Replaced NSE API with BSE RSS feed for easier access
 - ✅ Added yfinance integration for historical data
 - ✅ Implemented Nifty 500 backfill script with advanced options
 - ✅ Added force refresh, custom date range, and update recent days features

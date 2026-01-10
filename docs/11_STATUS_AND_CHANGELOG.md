@@ -1,6 +1,6 @@
 # Project Status and Changelog
 
-**Version**: 1.0  
+**Version**: 1.1  
 **Last Updated**: January 2025  
 **Current Status**: Phase 1 & Phase 2 Complete (Including Sentiment Analysis)
 
@@ -104,7 +104,7 @@
 - ✅ Business Standard RSS integration (markets, economy, companies)
 - ✅ Livemint RSS integration
 - ✅ Financial Express RSS integration
-- ✅ NSE corporate announcements fetcher
+- ✅ BSE corporate announcements RSS feed
 - ✅ Article content extraction and HTML cleaning
 - ✅ Date parsing (multiple formats)
 - ✅ Article deduplication by URL
@@ -133,6 +133,20 @@
 
 ## Recent Changes
 
+### January 2025 - Latest Updates
+
+**Documentation Consolidation**:
+- ✅ Merged `NEWS_FETCH_AND_STORE_GUIDE.md`, `NEWS_SOURCE_TRACKING_UPDATE.md`, and `RSS_FEED_VALIDATION.md` into `12_NEWS_FETCHING_AND_STORAGE.md`
+- ✅ Updated all NSE references to BSE
+- ✅ Removed outdated code snippets
+- ✅ Updated documentation index
+
+**News System Enhancements**:
+- ✅ Replaced NSE API with BSE RSS feed
+- ✅ Implemented per-source timestamp tracking
+- ✅ Added timezone normalization (naive UTC)
+- ✅ Fixed RSS feed URLs (Business Standard, Financial Express, Yahoo Finance)
+
 ### January 2025 - Major Update: Sentiment Analysis Integration
 
 #### New Components Added
@@ -150,7 +164,7 @@
    - `NewsFetcher` - RSS feed parsing and article extraction
 
 4. **Configuration**:
-   - `news_sources.py` - 10+ news sources configured
+   - `news_sources.py` - 12 active news sources configured (including BSE RSS feed)
 
 5. **Migration Script**:
    - `migrate_add_sentiment_tables.py` - Database migration for sentiment tables
@@ -161,7 +175,7 @@
 7. **Documentation**:
    - `09_SENTIMENT_ANALYSIS_SYSTEM.md` - Complete sentiment system guide
    - `10_FREE_SENTIMENT_SOURCES.md` - Free sources reference
-   - `PHASE1_PHASE2_SENTIMENT_COMPLETE.md` - Completion summary
+   - `12_NEWS_FETCHING_AND_STORAGE.md` - News fetching and storage guide
 
 #### Architecture Updates
 
@@ -176,23 +190,40 @@
 - `config/news_sources.py`
 - `data_sources/news_fetcher.py`
 - `scripts/migrate_add_sentiment_tables.py`
+- `scripts/fetch_and_store_news.py`
+- `scripts/validate_rss_urls.py`
 - `tests/test_news_fetcher.py`
 - `docs/09_SENTIMENT_ANALYSIS_SYSTEM.md`
 - `docs/10_FREE_SENTIMENT_SOURCES.md`
-- `PHASE1_PHASE2_SENTIMENT_COMPLETE.md`
+- `docs/12_NEWS_FETCHING_AND_STORAGE.md`
 
 #### Files Updated
 
 - `database/models.py` - Added 4 sentiment models
 - `database/repositories/__init__.py` - Added SentimentRepository
+- `database/repositories/sentiment_repo.py` - Added per-source tracking methods
 - `data_sources/__init__.py` - Added NewsFetcher
-- `config/__init__.py` - Added news sources exports
+- `data_sources/news_fetcher.py` - Fixed timezone handling, removed NSE-specific code
+- `config/__init__.py` - Added BSE_ANNOUNCEMENTS export
+- `config/news_sources.py` - Replaced NSE with BSE RSS feed, updated URLs
+- `config/ollama_config.py` - Added News Sentiment model configuration
+- `scripts/test_ollama_connection.py` - Added News Sentiment model testing
 - `DEVELOPMENT_TODO.md` - Updated completion status
 - `AGENTS.md` - Updated to 5-agent system
-- `docs/01_ARCHITECTURE_AND_DESIGN.md` - Added Agent #5
+- `docs/01_ARCHITECTURE_AND_DESIGN.md` - Added Agent #5, updated to BSE
 - `docs/02_DATABASE_SCHEMA_AND_MIGRATION.md` - Added sentiment tables
 - `docs/03_AGENT_IMPLEMENTATION_GUIDE.md` - Added Agent #5 section
+- `docs/04_CONFIGURATION_REFERENCE.md` - Added sentiment configuration
+- `docs/05_DEPLOYMENT_AND_OPERATIONS.md` - Added sentiment setup steps
+- `docs/06_TROUBLESHOOTING_AND_DEBUGGING.md` - Added sentiment troubleshooting
+- `docs/07_TESTING_AND_QUALITY_ASSURANCE.md` - Added sentiment tests
+- `docs/08_MAINTENANCE_AND_UPGRADE.md` - Added sentiment maintenance
+- `docs/09_SENTIMENT_ANALYSIS_SYSTEM.md` - Updated to BSE
+- `docs/10_FREE_SENTIMENT_SOURCES.md` - Updated to BSE RSS feed
+- `docs/00_DOCUMENTATION_INDEX.md` - Added News Fetching guide reference
+- `docs/QUICK_REFERENCE.md` - Added news fetching commands
 - `README.md` - Updated features and status
+- `requirements.txt` - Added optional sentiment dependencies
 
 ---
 
@@ -251,17 +282,31 @@
 
 ## Changelog
 
+### Version 1.1 - January 2025 (Latest)
+
+**News System Updates**:
+- ✅ Replaced NSE API with BSE RSS feed for easier access
+- ✅ Implemented per-source tracking for efficient incremental fetching
+- ✅ Added comprehensive news fetch and store script
+- ✅ Fixed timezone handling (all datetimes normalized to naive UTC)
+- ✅ Updated all RSS feed URLs (Business Standard, Financial Express, Yahoo Finance)
+- ✅ Added source status monitoring methods
+- ✅ Merged documentation (3 docs → 1 comprehensive guide)
+
 ### Version 1.0 - January 2025
 
 #### Added
 - ✅ Complete database schema with sentiment analysis tables
-- ✅ Sentiment repository with full CRUD operations
-- ✅ News fetcher module with RSS parsing
-- ✅ 10+ Indian news sources configuration
+- ✅ Sentiment repository with full CRUD operations and per-source tracking
+- ✅ News fetcher module with RSS parsing and timezone normalization
+- ✅ 12 active news sources configuration (including BSE RSS feed)
 - ✅ Database migration script for sentiment tables
+- ✅ News fetch and store script with multiple operation modes
+- ✅ RSS feed validation script
 - ✅ Comprehensive test suite for news fetcher
 - ✅ Complete sentiment analysis system documentation
 - ✅ Free sources guide for sentiment analysis
+- ✅ News fetching and storage guide (merged from 3 separate docs)
 
 #### Changed
 - Updated from 4-agent to 5-agent system
@@ -273,6 +318,9 @@
 - Database model relationships
 - Import paths in repositories
 - Configuration exports
+- Timezone handling (normalized to naive UTC)
+- RSS feed URLs (Business Standard, Financial Express, Yahoo Finance)
+- Removed unused NSE-specific code
 
 ---
 
@@ -329,7 +377,7 @@ This will:
 ## Known Issues
 
 ### Current Limitations
-- NSE API requires proper headers (User-Agent) - handled in NewsFetcher
+- BSE RSS feed works with standard RSS parser (no special handling needed)
 - Some RSS feeds may have rate limits - handled with rate limiting
 - FinBERT not yet integrated (optional optimization)
 
@@ -373,7 +421,7 @@ This will:
 ### Quick References
 - [Development Todo](../DEVELOPMENT_TODO.md)
 - [Quick Start](../QUICK_START.md)
-- [Phase 1 & 2 Completion](../PHASE1_PHASE2_SENTIMENT_COMPLETE.md)
+- [Status & Changelog](11_STATUS_AND_CHANGELOG.md) - Complete project status
 
 ---
 

@@ -2,12 +2,12 @@
 import feedparser
 import requests
 from typing import List, Dict, Any, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from loguru import logger
 from bs4 import BeautifulSoup
 import time
 from config.news_sources import (
-    get_all_active_sources, NewsSourceConfig, NSE_ANNOUNCEMENTS
+    get_all_active_sources, NewsSourceConfig
 )
 
 
@@ -47,12 +47,25 @@ class NewsFetcher:
             articles = []
             for entry in feed.entries[:50]:  # Limit to 50 most recent
                 try:
+                    # Parse published date - feedparser provides published_parsed as time tuple
+                    published_date = None
+                    if hasattr(entry, 'published_parsed') and entry.published_parsed:
+                        # feedparser returns time tuple (9-element struct_time)
+                        import calendar
+                        # timegm converts UTC time tuple to timestamp (UTC, not local)
+                        timestamp = calendar.timegm(entry.published_parsed)
+                        # Create UTC datetime then make naive
+                        published_date = datetime.fromtimestamp(timestamp, tz=timezone.utc).replace(tzinfo=None)
+                    else:
+                        # Fallback to string parsing
+                        published_date = self._parse_date(entry.get('published', ''))
+                    
                     # Extract article data
                     article = {
                         'source': source.name,
                         'title': entry.get('title', ''),
                         'url': entry.get('link', ''),
-                        'published_date': self._parse_date(entry.get('published', '')),
+                        'published_date': published_date,
                         'summary': entry.get('summary', ''),
                         'content': self._extract_content(entry),
                         'categories': source.categories
@@ -75,10 +88,6 @@ class NewsFetcher:
     def _fetch_api(self, source: NewsSourceConfig) -> List[Dict[str, Any]]:
         """Fetch articles from API endpoint."""
         try:
-            # Special handling for NSE announcements
-            if source.name == "nse_announcements":
-                return self._fetch_nse_announcements()
-            
             # Generic API fetch
             response = self.session.get(
                 source.url,
@@ -89,66 +98,31 @@ class NewsFetcher:
             
             data = response.json()
             # Parse API response based on structure
-            # This is a placeholder - actual implementation depends on API structure
+            # Note: Currently all sources use RSS feeds, so this is a placeholder
+            # If adding new API sources, implement parsing here
             articles = []
-            # TODO: Implement API-specific parsing
             return articles
             
         except Exception as e:
             logger.error(f"API fetch error for {source.name}: {e}")
             return []
     
-    def _fetch_nse_announcements(self) -> List[Dict[str, Any]]:
-        """Fetch NSE corporate announcements."""
-        try:
-            # NSE API requires proper headers
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                'Accept': 'application/json',
-                'Accept-Language': 'en-US,en;q=0.9',
-            }
-            
-            # NSE API endpoint (may need to be updated)
-            url = "https://www.nseindia.com/api/corporate-announcements"
-            
-            response = self.session.get(url, headers=headers, timeout=30)
-            response.raise_for_status()
-            
-            data = response.json()
-            articles = []
-            
-            # Parse NSE announcements structure
-            # Structure may vary - this is a placeholder
-            if isinstance(data, list):
-                for item in data[:50]:  # Limit to 50
-                    article = {
-                        'source': 'nse_announcements',
-                        'title': item.get('subject', ''),
-                        'url': item.get('url', ''),
-                        'published_date': self._parse_date(item.get('date', '')),
-                        'summary': item.get('description', ''),
-                        'content': item.get('description', ''),
-                        'categories': ['corporate', 'announcements']
-                    }
-                    if article['title']:
-                        articles.append(article)
-            
-            logger.info(f"Fetched {len(articles)} NSE announcements")
-            return articles
-            
-        except Exception as e:
-            logger.warning(f"Error fetching NSE announcements: {e}")
-            return []
-    
     def _parse_date(self, date_str: str) -> datetime:
-        """Parse date string to datetime object."""
+        """Parse date string to datetime object (naive UTC).
+        
+        Returns:
+            Naive datetime in UTC (no timezone info)
+        """
         if not date_str:
-            return datetime.now()
+            from datetime import timezone
+            return datetime.now(timezone.utc).replace(tzinfo=None)
         
         try:
+            from datetime import timezone
+            
             # Try common date formats
             formats = [
-                '%a, %d %b %Y %H:%M:%S %z',  # RSS format
+                '%a, %d %b %Y %H:%M:%S %z',  # RSS format with timezone
                 '%a, %d %b %Y %H:%M:%S %Z',  # RSS format with timezone name
                 '%Y-%m-%d %H:%M:%S',
                 '%Y-%m-%d',
@@ -157,7 +131,11 @@ class NewsFetcher:
             
             for fmt in formats:
                 try:
-                    return datetime.strptime(date_str, fmt)
+                    dt = datetime.strptime(date_str, fmt)
+                    # If timezone-aware, convert to UTC and make naive
+                    if dt.tzinfo is not None:
+                        dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+                    return dt
                 except ValueError:
                     continue
             
@@ -165,15 +143,21 @@ class NewsFetcher:
             import feedparser
             parsed = feedparser._parse_date(date_str)
             if parsed:
-                return datetime.fromtimestamp(time.mktime(parsed))
+                # feedparser returns timezone-aware tuple, convert to naive UTC
+                dt = datetime.fromtimestamp(time.mktime(parsed))
+                # If parsed date has timezone info, handle it
+                # feedparser._parse_date returns a time tuple, mktime assumes local time
+                # For RSS feeds, we'll treat as UTC if no timezone specified
+                return dt
             
-            # Fallback to current time
+            # Fallback to current time (naive UTC)
             logger.warning(f"Could not parse date: {date_str}")
-            return datetime.now()
+            return datetime.now(timezone.utc).replace(tzinfo=None)
             
         except Exception as e:
             logger.warning(f"Date parsing error: {e}")
-            return datetime.now()
+            from datetime import timezone
+            return datetime.now(timezone.utc).replace(tzinfo=None)
     
     def _extract_content(self, entry: Dict) -> str:
         """Extract full content from RSS entry."""

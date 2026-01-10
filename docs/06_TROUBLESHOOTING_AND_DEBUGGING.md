@@ -105,12 +105,15 @@
 
 **Solutions**:
 1. Check network connectivity
-2. Verify RSS feed URLs are accessible
+2. Validate RSS feed URLs: `python scripts/validate_rss_urls.py`
 3. Check User-Agent headers are set correctly
 4. Verify feedparser is installed: `pip install feedparser`
 5. Test RSS feed manually: `python -c "import feedparser; print(feedparser.parse('URL'))"`
 6. Check for rate limiting (wait 15-30 minutes between fetches)
 7. Review news fetcher logs for specific errors
+8. Check for timezone errors (all datetimes should be naive UTC)
+9. Verify BSE RSS feed URL: `https://www.bseindia.com/rssxml/Corporate_Announcements.xml`
+10. Check source status: Use `get_all_sources_status()` method
 
 ---
 
@@ -390,6 +393,9 @@ python scripts/test_agents.py
 
 # Health Check
 python scripts/health_check.py
+
+# Validate RSS Feeds
+python scripts/validate_rss_urls.py
 ```
 
 ### Reset Procedures

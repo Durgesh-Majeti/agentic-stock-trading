@@ -32,6 +32,22 @@ python -c "import nltk; nltk.download('vader_lexicon')"
 python scripts/test_ollama_connection.py
 ```
 
+### News Fetching
+
+```bash
+# Fetch news articles (incremental - recommended)
+python scripts/fetch_and_store_news.py
+
+# Update last 7 days
+python scripts/fetch_and_store_news.py --update-recent 7
+
+# Force refresh
+python scripts/fetch_and_store_news.py --force-refresh
+
+# Validate RSS feeds
+python scripts/validate_rss_urls.py
+```
+
 ### Ollama Setup
 
 ```bash
@@ -305,6 +321,7 @@ Get-Content logs/trading_app.log -Wait  # Windows PowerShell
 - [Configuration](04_CONFIGURATION_REFERENCE.md) - All settings
 - [Sentiment Analysis](09_SENTIMENT_ANALYSIS_SYSTEM.md) - Sentiment system guide
 - [Free Sources](10_FREE_SENTIMENT_SOURCES.md) - Free news sources
+- [News Fetching](12_NEWS_FETCHING_AND_STORAGE.md) - News fetch and storage guide
 - [Troubleshooting](06_TROUBLESHOOTING_AND_DEBUGGING.md) - Common issues
 - [API Integration](API_INTEGRATION_SUMMARY.md) - All APIs
 - [Telegram Bot](TELEGRAM_BOT_GUIDE.md) - Bot commands

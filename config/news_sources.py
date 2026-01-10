@@ -69,14 +69,14 @@ INDIAN_NEWS_SOURCES: List[NewsSourceConfig] = [
     ),
     NewsSourceConfig(
         name="business_standard_economy",
-        url="https://www.business-standard.com/rss/economy-102.rss",
+        url="https://www.business-standard.com/rss/economy-policy-108.rss",
         type="rss",
-        categories=["economy", "macro"],
+        categories=["economy", "macro", "policy"],
         fetch_frequency=15
     ),
     NewsSourceConfig(
         name="business_standard_companies",
-        url="https://www.business-standard.com/rss/companies-103.rss",
+        url="https://www.business-standard.com/rss/companies-101.rss",
         type="rss",
         categories=["companies", "stocks"],
         fetch_frequency=15
@@ -90,24 +90,24 @@ INDIAN_NEWS_SOURCES: List[NewsSourceConfig] = [
     ),
     NewsSourceConfig(
         name="financial_express_markets",
-        url="https://www.financialexpress.com/market/feed/",
+        url="https://www.financialexpress.com/feed/market/",
         type="rss",
         categories=["markets", "stocks"],
         fetch_frequency=15
     ),
 ]
 
-# NSE Corporate Announcements (requires special handling)
-NSE_ANNOUNCEMENTS = NewsSourceConfig(
-    name="nse_announcements",
-    url="https://www.nseindia.com/api/corporate-announcements",
-    type="api",
+# BSE Corporate Announcements (RSS Feed)
+BSE_ANNOUNCEMENTS = NewsSourceConfig(
+    name="bse_announcements",
+    url="https://www.bseindia.com/rssxml/Corporate_Announcements.xml",
+    type="rss",
     categories=["corporate", "announcements"],
     fetch_frequency=30,
+    is_active=True,
     headers={
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'application/json',
-        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept': 'application/rss+xml, application/xml, text/xml',
     }
 )
 
@@ -115,7 +115,7 @@ NSE_ANNOUNCEMENTS = NewsSourceConfig(
 INTERNATIONAL_SOURCES: List[NewsSourceConfig] = [
     NewsSourceConfig(
         name="yahoo_finance",
-        url="https://feeds.finance.yahoo.com/rss/2.0/headline",
+        url="https://finance.yahoo.com/rss/",
         type="rss",
         categories=["international", "global"],
         fetch_frequency=30
@@ -125,13 +125,13 @@ INTERNATIONAL_SOURCES: List[NewsSourceConfig] = [
 
 def get_all_active_sources() -> List[NewsSourceConfig]:
     """Get all active news sources."""
-    all_sources = INDIAN_NEWS_SOURCES + [NSE_ANNOUNCEMENTS] + INTERNATIONAL_SOURCES
+    all_sources = INDIAN_NEWS_SOURCES + [BSE_ANNOUNCEMENTS] + INTERNATIONAL_SOURCES
     return [source for source in all_sources if source.is_active]
 
 
 def get_source_by_name(name: str) -> NewsSourceConfig:
     """Get a specific news source by name."""
-    all_sources = INDIAN_NEWS_SOURCES + [NSE_ANNOUNCEMENTS] + INTERNATIONAL_SOURCES
+    all_sources = INDIAN_NEWS_SOURCES + [BSE_ANNOUNCEMENTS] + INTERNATIONAL_SOURCES
     for source in all_sources:
         if source.name == name:
             return source
@@ -140,7 +140,7 @@ def get_source_by_name(name: str) -> NewsSourceConfig:
 
 def get_sources_by_category(category: str) -> List[NewsSourceConfig]:
     """Get all sources that cover a specific category."""
-    all_sources = INDIAN_NEWS_SOURCES + [NSE_ANNOUNCEMENTS] + INTERNATIONAL_SOURCES
+    all_sources = INDIAN_NEWS_SOURCES + [BSE_ANNOUNCEMENTS] + INTERNATIONAL_SOURCES
     return [
         source for source in all_sources
         if source.is_active and category in source.categories

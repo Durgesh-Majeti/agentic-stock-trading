@@ -78,8 +78,8 @@
 - **Content**: Full article content in RSS
 - **Limitations**: None for RSS feeds
 
-#### 6. NSE Corporate Announcements
-- **URL**: `https://www.nseindia.com/api/corporate-announcements`
+#### 6. BSE Corporate Announcements (RSS Feed)
+- **URL**: `https://www.bseindia.com/rssxml/Corporate_Announcements.xml`
 - **Coverage**: Corporate actions, results, board meetings, AGMs
 - **Cost**: Free
 - **Update Frequency**: Real-time during market hours
@@ -362,8 +362,9 @@ FREE_NEWS_SOURCES = [
         "cost": "free"
     },
     {
-        "name": "nse_announcements",
-        "url": "https://www.nseindia.com/api/corporate-announcements",
+        "name": "bse_announcements",
+        "url": "https://www.bseindia.com/rssxml/Corporate_Announcements.xml",
+        "type": "rss",
         "type": "api",
         "cost": "free",
         "headers_required": True
@@ -420,7 +421,7 @@ SENTIMENT_ANALYSIS = {
 2. Optionally add FinBERT for speed optimization
 
 ### Phase 3: Add Corporate Announcements
-1. NSE Corporate Announcements API
+1. BSE Corporate Announcements RSS Feed
 2. BSE announcements (if needed)
 
 ### Phase 4: Optional Enhancements

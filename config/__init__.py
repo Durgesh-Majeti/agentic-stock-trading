@@ -7,7 +7,7 @@ from config.news_sources import (
     get_source_by_name,
     get_sources_by_category,
     INDIAN_NEWS_SOURCES,
-    NSE_ANNOUNCEMENTS,
+    BSE_ANNOUNCEMENTS,
     INTERNATIONAL_SOURCES
 )
 
@@ -20,6 +20,6 @@ __all__ = [
     "get_source_by_name",
     "get_sources_by_category",
     "INDIAN_NEWS_SOURCES",
-    "NSE_ANNOUNCEMENTS",
+    "BSE_ANNOUNCEMENTS",
     "INTERNATIONAL_SOURCES",
 ]

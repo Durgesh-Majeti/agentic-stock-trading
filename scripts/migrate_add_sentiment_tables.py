@@ -143,19 +143,20 @@ def migrate_add_sentiment_tables():
             )
         """)
         
-        # Insert default news sources
-        default_sources = [
-            ("economic_times_markets", "https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms", 15),
-            ("economic_times_economy", "https://economictimes.indiatimes.com/news/economy/rssfeeds/1373380680.cms", 15),
-            ("moneycontrol_latest", "https://www.moneycontrol.com/rss/latestnews.xml", 15),
-            ("business_standard_markets", "https://www.business-standard.com/rss/markets-106.rss", 15),
-        ]
+        # Insert default news sources from config
+        from config.news_sources import get_all_active_sources
         
-        for name, url, freq in default_sources:
+        active_sources = get_all_active_sources()
+        logger.info(f"Inserting {len(active_sources)} active news sources...")
+        
+        for source in active_sources:
             cursor.execute("""
                 INSERT OR IGNORE INTO news_sources (name, url_pattern, fetch_frequency, is_active)
-                VALUES (?, ?, ?, 1)
-            """, (name, url, freq))
+                VALUES (?, ?, ?, ?)
+            """, (source.name, source.url, source.fetch_frequency, 1 if source.is_active else 0))
+            logger.debug(f"  - {source.name}: {source.url}")
+        
+        logger.info(f"✅ Inserted {len(active_sources)} news sources")
         
         conn.commit()
         logger.info("✅ Sentiment analysis tables created successfully")

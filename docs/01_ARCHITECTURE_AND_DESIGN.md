@@ -337,7 +337,7 @@ Bot: "Order placed: 77 TCS @ ₹3245
 - **Economic Times** (RSS): Markets, economy, policy
 - **Moneycontrol** (RSS): Stocks, sectors, market analysis
 - **Business Standard** (RSS): Macro, government, economy
-- **NSE/BSE Announcements**: Corporate actions, results
+- **BSE Announcements**: Corporate actions, results (RSS feed)
 
 **Frequency**: Every 15-30 minutes (market hours)
 

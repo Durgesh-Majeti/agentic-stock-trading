@@ -34,7 +34,7 @@ The Sentiment Analysis System enhances the trading strategy by incorporating new
 
 ### Key Features
 
-- **Multi-source news aggregation**: Economic Times, Moneycontrol, Business Standard, NSE/BSE announcements
+- **Multi-source news aggregation**: Economic Times, Moneycontrol, Business Standard, BSE announcements
 - **Hybrid sentiment analysis**: DeepSeek R1 7B for complex news, FinBERT for high-volume simple news
 - **Macro-to-stock propagation**: Sector impact matrix maps macro events to stock-specific sentiment
 - **Daily sentiment aggregation**: Combines stock-specific, sector, and macro sentiment
@@ -184,8 +184,9 @@ The Sentiment Analysis System enhances the trading strategy by incorporating new
 - **Frequency**: Real-time
 - **Categories**: Economy, Markets, Policy
 
-#### 4. NSE/BSE Announcements
-- **URL**: NSE/BSE corporate announcement feeds
+#### 4. BSE Corporate Announcements
+- **URL**: `https://www.bseindia.com/rssxml/Corporate_Announcements.xml`
+- **Type**: RSS feed (standard format)
 - **Coverage**: Corporate actions, results, announcements
 - **Cost**: Free
 - **Frequency**: Real-time
