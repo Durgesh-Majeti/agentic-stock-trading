@@ -1,5 +1,8 @@
 # Agentic AI Stock Trading App for Indian Markets
 
+**Version**: 1.1.0  
+**Last Updated**: January 2025
+
 A comprehensive agentic AI application for Indian stock trading with dashboard, Telegram bot, and multi-agent analysis system using local Ollama models.
 
 ## 🎯 Features
