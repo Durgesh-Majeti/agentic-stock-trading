@@ -247,3 +247,205 @@ class MarketDataRepository:
         ).delete()
         
         self.session.commit()
+    
+    def get_existing_dates_for_stock(self, stock_id: int) -> set:
+        """Get set of existing dates for a stock (for bulk existence check).
+        
+        Args:
+            stock_id: Stock ID
+            
+        Returns:
+            Set of date objects
+        """
+        results = self.session.query(MarketDataDaily.date).filter(
+            MarketDataDaily.stock_id == stock_id
+        ).all()
+        return {row[0] for row in results}
+    
+    def bulk_insert_daily_data(
+        self,
+        stock_id: int,
+        data_list: List[dict]
+    ) -> int:
+        """Bulk insert daily market data (much faster than individual inserts).
+        
+        Args:
+            stock_id: Stock ID
+            data_list: List of dictionaries with date, open, high, low, close, volume, and indicators
+            
+        Returns:
+            Number of rows inserted
+        """
+        if not data_list:
+            return 0
+        
+        # Define all indicator fields to ensure consistency
+        indicator_fields = [
+            'rsi', 'macd', 'macd_signal', 'macd_histogram',
+            'bollinger_upper', 'bollinger_lower', 'bollinger_middle',
+            'sma_20', 'sma_50', 'sma_200', 'ema_12', 'ema_26', 'ema_20', 'ema_50',
+            'adx', 'adx_positive', 'adx_negative',
+            'stochastic_k', 'stochastic_d', 'williams_r', 'cci', 'atr', 'obv', 'mfi',
+            'volume_sma', 'price_change', 'price_change_percent',
+            'high_low_range', 'high_low_range_percent', 'volume_ratio',
+            'momentum', 'roc'
+        ]
+        
+        # Prepare bulk insert mappings - ensure ALL fields are always present
+        # This is critical: SQLAlchemy bulk_insert_mappings requires consistent keys
+        mappings = []
+        for data in data_list:
+            # Always include all fields, even if None, to ensure consistent mapping
+            mapping = {
+                'stock_id': stock_id,
+                'date': data['date'],
+                'open': data['open'],
+                'high': data['high'],
+                'low': data['low'],
+                'close': data['close'],
+                'volume': data['volume'],
+                # All indicators - explicitly set to None if missing
+                'rsi': data.get('rsi'),
+                'macd': data.get('macd'),
+                'macd_signal': data.get('macd_signal'),
+                'macd_histogram': data.get('macd_histogram'),
+                'bollinger_upper': data.get('bollinger_upper'),
+                'bollinger_lower': data.get('bollinger_lower'),
+                'bollinger_middle': data.get('bollinger_middle'),
+                'sma_20': data.get('sma_20'),
+                'sma_50': data.get('sma_50'),
+                'sma_200': data.get('sma_200'),
+                'ema_12': data.get('ema_12'),
+                'ema_26': data.get('ema_26'),
+                'ema_20': data.get('ema_20'),
+                'ema_50': data.get('ema_50'),
+                'adx': data.get('adx'),
+                'adx_positive': data.get('adx_positive'),
+                'adx_negative': data.get('adx_negative'),
+                'stochastic_k': data.get('stochastic_k'),
+                'stochastic_d': data.get('stochastic_d'),
+                'williams_r': data.get('williams_r'),
+                'cci': data.get('cci'),
+                'atr': data.get('atr'),
+                'obv': data.get('obv'),
+                'mfi': data.get('mfi'),
+                'volume_sma': data.get('volume_sma'),
+                'price_change': data.get('price_change'),
+                'price_change_percent': data.get('price_change_percent'),
+                'high_low_range': data.get('high_low_range'),
+                'high_low_range_percent': data.get('high_low_range_percent'),
+                'volume_ratio': data.get('volume_ratio'),
+                'momentum': data.get('momentum'),
+                'roc': data.get('roc')
+            }
+            mappings.append(mapping)
+        
+        # Process in smaller batches to avoid SQLite parameter limits
+        batch_size = 100
+        total_inserted = 0
+        
+        for i in range(0, len(mappings), batch_size):
+            batch = mappings[i:i + batch_size]
+            try:
+                self.session.bulk_insert_mappings(MarketDataDaily, batch)
+                self.session.flush()  # Flush to database but don't commit yet
+                total_inserted += len(batch)
+            except Exception as e:
+                # Rollback this batch
+                try:
+                    self.session.rollback()
+                except:
+                    pass
+                # If bulk insert fails, try individual inserts for this batch
+                for mapping in batch:
+                    try:
+                        record = MarketDataDaily(**mapping)
+                        self.session.add(record)
+                        self.session.flush()  # Flush each record
+                        total_inserted += 1
+                    except Exception as e2:
+                        # Skip this record if it still fails
+                        try:
+                            self.session.rollback()
+                        except:
+                            pass
+                        continue
+        
+        return total_inserted
+    
+    def bulk_update_daily_data(
+        self,
+        stock_id: int,
+        data_list: List[dict]
+    ) -> int:
+        """Bulk update existing daily market data.
+        
+        Uses efficient batch updates - queries records in batches and updates them.
+        This is faster than individual queries but avoids SQLite parameter issues.
+        
+        Args:
+            stock_id: Stock ID
+            data_list: List of dictionaries with date and fields to update
+            
+        Returns:
+            Number of rows updated
+        """
+        if not data_list:
+            return 0
+        
+        # Process in smaller batches to avoid SQLite issues
+        batch_size = 50
+        updated_count = 0
+        
+        for i in range(0, len(data_list), batch_size):
+            batch = data_list[i:i + batch_size]
+            
+            # Update each record individually (more reliable with SQLite)
+            # But we batch the commits for better performance
+            for data in batch:
+                try:
+                    # Query existing record
+                    existing = self.session.query(MarketDataDaily).filter(
+                        MarketDataDaily.stock_id == stock_id,
+                        MarketDataDaily.date == data['date']
+                    ).first()
+                    
+                    if existing:
+                        # Update OHLCV
+                        existing.open = data['open']
+                        existing.high = data['high']
+                        existing.low = data['low']
+                        existing.close = data['close']
+                        existing.volume = data['volume']
+                        
+                        # Update indicators
+                        indicator_fields = [
+                            'rsi', 'macd', 'macd_signal', 'macd_histogram',
+                            'bollinger_upper', 'bollinger_lower', 'bollinger_middle',
+                            'sma_20', 'sma_50', 'sma_200', 'ema_12', 'ema_26', 'ema_20', 'ema_50',
+                            'adx', 'adx_positive', 'adx_negative',
+                            'stochastic_k', 'stochastic_d', 'williams_r', 'cci', 'atr', 'obv', 'mfi',
+                            'volume_sma', 'price_change', 'price_change_percent',
+                            'high_low_range', 'high_low_range_percent', 'volume_ratio',
+                            'momentum', 'roc'
+                        ]
+                        for field in indicator_fields:
+                            if field in data:
+                                setattr(existing, field, data[field])
+                        
+                        updated_count += 1
+                except Exception as e:
+                    # Skip this record if there's an error
+                    continue
+            
+            # Flush changes but don't commit - let context manager handle commit
+            if updated_count > 0:
+                try:
+                    self.session.flush()
+                except Exception as e:
+                    try:
+                        self.session.rollback()
+                    except:
+                        pass
+        
+        return updated_count
