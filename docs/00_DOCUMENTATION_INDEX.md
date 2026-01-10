@@ -227,6 +227,26 @@ This documentation set provides comprehensive guidance for **creating, maintaini
 - Understanding per-source tracking
 - Troubleshooting fetch issues
 - Monitoring source status
+
+---
+
+### 13. [Git Workflow Guide](GIT_WORKFLOW.md)
+**Purpose**: Complete guide to git branch structure and workflow
+
+**Contents**:
+- Branch structure (main → development)
+- Daily development workflow
+- Testing and validation process
+- Release process to main
+- Commit message format
+- Version numbering
+- Branch protection rules
+
+**Use When**:
+- Understanding git workflow
+- Making commits and releases
+- Merging development to main
+- Creating version tags
 **Purpose**: Current project status, recent changes, and changelog
 
 **Contents**:
@@ -451,6 +471,7 @@ This documentation set provides comprehensive guidance for **creating, maintaini
 **Free Sources**: [10_FREE_SENTIMENT_SOURCES.md](10_FREE_SENTIMENT_SOURCES.md)  
 **Status & Changelog**: [11_STATUS_AND_CHANGELOG.md](11_STATUS_AND_CHANGELOG.md)  
 **News Fetching**: [12_NEWS_FETCHING_AND_STORAGE.md](12_NEWS_FETCHING_AND_STORAGE.md)  
+**Git Workflow**: [GIT_WORKFLOW.md](GIT_WORKFLOW.md)  
 **News Fetching**: [12_NEWS_FETCHING_AND_STORAGE.md](12_NEWS_FETCHING_AND_STORAGE.md)
 
 ### By Component
