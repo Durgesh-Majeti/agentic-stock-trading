@@ -106,10 +106,66 @@ class TestCacheManager:
     def test_clear(self, cache_manager):
         """Test cache clearing."""
         # Add some entries
-        cache_manager.cache["key1"] = {"data": {}, "timestamp": 0, "ttl": 10}
+        cache_manager.cache["key1"] = {"data": {}, "timestamp": 0, "ttl": 10, "agent_name": "test_agent"}
         
         cache_manager.clear()
         
         assert len(cache_manager.cache) == 0
         assert cache_manager.hits == 0
         assert cache_manager.misses == 0
+    
+    @pytest.mark.asyncio
+    async def test_invalidate_by_agent(self, cache_manager, mock_call_func):
+        """Test invalidating cache entries for specific agent."""
+        # Add entries for different agents
+        await cache_manager.get_or_call("agent1", {"query": "test1"}, mock_call_func)
+        await cache_manager.get_or_call("agent2", {"query": "test2"}, mock_call_func)
+        await cache_manager.get_or_call("agent1", {"query": "test3"}, mock_call_func)
+        
+        # Should have 3 entries
+        assert len(cache_manager.cache) == 3
+        
+        # Verify all entries have agent_name stored
+        for entry in cache_manager.cache.values():
+            assert "agent_name" in entry
+            assert entry["agent_name"] in ["agent1", "agent2"]
+        
+        # Invalidate agent1 entries
+        cache_manager.invalidate("agent1")
+        
+        # Should only have agent2 entry left
+        assert len(cache_manager.cache) == 1
+        # Verify remaining entry is for agent2
+        remaining_entry = next(iter(cache_manager.cache.values()))
+        assert remaining_entry["agent_name"] == "agent2"
+    
+    @pytest.mark.asyncio
+    async def test_cache_entry_has_agent_name(self, cache_manager, mock_call_func):
+        """Test that cache entries store agent_name."""
+        input_data = {"query": "test"}
+        
+        await cache_manager.get_or_call("test_agent", input_data, mock_call_func)
+        
+        # Verify cache entry has agent_name
+        cache_key = cache_manager.get_cache_key("test_agent", input_data)
+        cached_entry = cache_manager.cache[cache_key]
+        
+        assert "agent_name" in cached_entry
+        assert cached_entry["agent_name"] == "test_agent"
+        assert "data" in cached_entry
+        assert "timestamp" in cached_entry
+        assert "ttl" in cached_entry
+    
+    @pytest.mark.asyncio
+    async def test_invalidate_all(self, cache_manager, mock_call_func):
+        """Test invalidating all cache entries."""
+        # Add some entries
+        await cache_manager.get_or_call("agent1", {"query": "test1"}, mock_call_func)
+        await cache_manager.get_or_call("agent2", {"query": "test2"}, mock_call_func)
+        
+        assert len(cache_manager.cache) == 2
+        
+        # Invalidate all
+        cache_manager.invalidate()
+        
+        assert len(cache_manager.cache) == 0

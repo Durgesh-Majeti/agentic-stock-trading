@@ -9,6 +9,8 @@ from typing import Dict, Any, Optional, List
 from datetime import datetime
 import uuid
 import asyncio
+from pathlib import Path
+import yaml
 from loguru import logger
 
 from orchestrator.workflow_executor import WorkflowExecutor
@@ -89,9 +91,36 @@ class TradingOrchestrator:
         return {}
     
     def _load_agent_contracts(self) -> Dict[str, Any]:
-        """Load agent contracts from YAML."""
-        # TODO: Load from config/agent_contracts.yaml
-        return {}
+        """
+        Load agent contracts from YAML file.
+        
+        Returns:
+            Dictionary mapping agent names to their contracts
+        """
+        contracts_file = Path("config/agent_contracts.yaml")
+        
+        if not contracts_file.exists():
+            logger.warning(f"Agent contracts file not found: {contracts_file}")
+            return {}
+        
+        try:
+            with open(contracts_file, 'r') as f:
+                data = yaml.safe_load(f)
+            
+            # Extract agents from YAML structure
+            agents_data = data.get("agents", {})
+            
+            # Map agent names to contracts
+            contracts = {}
+            for agent_name, contract in agents_data.items():
+                contracts[agent_name] = contract
+            
+            logger.info(f"Loaded {len(contracts)} agent contracts")
+            return contracts
+            
+        except Exception as e:
+            logger.error(f"Error loading agent contracts: {e}")
+            return {}
     
     async def execute_workflow(
         self,
@@ -184,8 +213,6 @@ class TradingOrchestrator:
         Returns:
             Agent output
         """
-        import asyncio
-        
         # Check if agent exists
         if agent_name not in self.agents:
             raise AgentNotFoundError(f"Agent '{agent_name}' not found")
@@ -209,9 +236,14 @@ class TradingOrchestrator:
             if use_cache:
                 # Wrap sync process() in async-compatible callable
                 async def call_agent(input_data):
-                    return await asyncio.get_event_loop().run_in_executor(
-                        None, sync_process
-                    )
+                    # Use asyncio.to_thread() for Python 3.9+ or get_running_loop() for older
+                    try:
+                        # Python 3.9+ - use to_thread
+                        return await asyncio.to_thread(sync_process)
+                    except AttributeError:
+                        # Python < 3.9 - use run_in_executor with get_running_loop()
+                        loop = asyncio.get_running_loop()
+                        return await loop.run_in_executor(None, sync_process)
                 
                 return await self.cache_manager.get_or_call(
                     agent_name,
@@ -219,16 +251,27 @@ class TradingOrchestrator:
                     call_agent
                 )
             else:
-                # Run sync process in executor
-                return await asyncio.get_event_loop().run_in_executor(
-                    None, sync_process
-                )
+                # Run sync process in executor using modern asyncio patterns
+                try:
+                    # Python 3.9+ - use to_thread
+                    return await asyncio.to_thread(sync_process)
+                except AttributeError:
+                    # Python < 3.9 - use run_in_executor with get_running_loop()
+                    loop = asyncio.get_running_loop()
+                    return await loop.run_in_executor(None, sync_process)
+        
+        # Initialize start_time before try block to ensure it's always available
+        start_time = datetime.now()
         
         try:
-            start_time = datetime.now()
+            # Call with circuit breaker and timeout protection
+            # Default timeout: 60 seconds per agent call
+            agent_timeout = 60.0
             
-            # Call with circuit breaker
-            output = await circuit_breaker.call(_call)
+            output = await asyncio.wait_for(
+                circuit_breaker.call(_call),
+                timeout=agent_timeout
+            )
             
             duration = (datetime.now() - start_time).total_seconds()
             
@@ -243,11 +286,24 @@ class TradingOrchestrator:
             
             return output
             
+        except asyncio.TimeoutError:
+            duration = (datetime.now() - start_time).total_seconds()
+            self.monitor.track_agent_call(agent_name, duration, False)
+            error_msg = f"Agent '{agent_name}' call timed out after {agent_timeout}s"
+            logger.error(error_msg)
+            raise TimeoutError(error_msg) from None
         except Exception as e:
-            if 'start_time' in locals():
-                duration = (datetime.now() - start_time).total_seconds()
-                self.monitor.track_agent_call(agent_name, duration, False)
-            logger.error(f"Agent '{agent_name}' call failed: {e}")
+            duration = (datetime.now() - start_time).total_seconds()
+            self.monitor.track_agent_call(agent_name, duration, False)
+            # Include context in error log
+            logger.error(
+                f"Agent '{agent_name}' call failed after {duration:.3f}s: {e}",
+                extra={
+                    "agent_name": agent_name,
+                    "duration": duration,
+                    "input_data_keys": list(input_data.keys()) if input_data else []
+                }
+            )
             raise
     
     def _format_agent_input(
@@ -255,26 +311,124 @@ class TradingOrchestrator:
         agent_name: str,
         raw_data: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Format input data according to agent contract."""
-        # TODO: Implement input formatting based on contract
-        # - Load contract for agent
-        # - Validate required fields
-        # - Transform data types
-        # - Apply defaults
-        return raw_data
+        """
+        Format input data according to agent contract.
+        
+        Args:
+            agent_name: Name of agent
+            raw_data: Raw input data
+        
+        Returns:
+            Formatted input data with defaults applied
+        """
+        # Get contract for agent
+        contract = self.agent_contracts.get(agent_name)
+        if not contract:
+            logger.warning(f"No contract found for agent '{agent_name}', skipping validation")
+            return raw_data
+        
+        input_schema = contract.get("input", {})
+        formatted_data = raw_data.copy()
+        
+        # Apply defaults for optional fields
+        for field_name, field_spec in input_schema.items():
+            if field_name not in formatted_data:
+                if "default" in field_spec:
+                    formatted_data[field_name] = field_spec["default"]
+                    logger.debug(f"Applied default value for {agent_name}.{field_name}")
+        
+        # Validate required fields
+        for field_name, field_spec in input_schema.items():
+            if field_spec.get("required", False):
+                if field_name not in formatted_data:
+                    raise ValueError(
+                        f"Missing required field '{field_name}' for agent '{agent_name}'"
+                    )
+        
+        return formatted_data
     
     def _validate_agent_output(
         self,
         agent_name: str,
         output: Dict[str, Any]
     ) -> bool:
-        """Validate agent output against contract."""
-        # TODO: Implement output validation
-        # - Load contract for agent
-        # - Check required fields
-        # - Validate types
-        # - Check ranges and constraints
+        """
+        Validate agent output against contract.
+        
+        Args:
+            agent_name: Name of agent
+            output: Agent output data
+        
+        Returns:
+            True if valid, False otherwise
+        """
+        # Ensure output is a dictionary
+        if not isinstance(output, dict):
+            logger.error(
+                f"Agent '{agent_name}' output is not a dictionary: {type(output)}"
+            )
+            return False
+        
+        # Get contract for agent
+        contract = self.agent_contracts.get(agent_name)
+        if not contract:
+            logger.warning(f"No contract found for agent '{agent_name}', skipping validation")
+            return True  # No contract = no validation
+        
+        output_schema = contract.get("output", {})
+        
+        # Check required fields
+        for field_name, field_spec in output_schema.items():
+            if field_spec.get("required", False):
+                if field_name not in output:
+                    logger.error(
+                        f"Missing required output field '{field_name}' for agent '{agent_name}'"
+                    )
+                    return False
+                
+                # Basic type validation
+                expected_type = field_spec.get("type")
+                if expected_type:
+                    actual_value = output[field_name]
+                    type_valid = self._validate_type(actual_value, expected_type)
+                    if not type_valid:
+                        logger.error(
+                            f"Type mismatch for '{field_name}' in agent '{agent_name}': "
+                            f"expected {expected_type}, got {type(actual_value).__name__}"
+                        )
+                        return False
+        
         return True
+    
+    def _validate_type(self, value: Any, expected_type: str) -> bool:
+        """
+        Validate value type against expected type string.
+        
+        Args:
+            value: Value to validate
+            expected_type: Expected type (string, integer, float, array, object, boolean)
+        
+        Returns:
+            True if type matches
+        """
+        type_mapping = {
+            "string": str,
+            "integer": int,
+            "float": (int, float),  # Accept both int and float
+            "number": (int, float),
+            "array": list,
+            "object": dict,
+            "boolean": bool
+        }
+        
+        expected_python_type = type_mapping.get(expected_type.lower())
+        if expected_python_type is None:
+            logger.warning(f"Unknown type '{expected_type}' in contract, skipping validation")
+            return True
+        
+        if isinstance(expected_python_type, tuple):
+            return isinstance(value, expected_python_type)
+        return isinstance(value, expected_python_type)
     
     async def shutdown(self):
         """Graceful shutdown of orchestrator."""

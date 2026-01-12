@@ -144,8 +144,9 @@ class BaseAgent(ABC):
             input_data_str = json.dumps(input_data) if input_data else None
             output_data_str = json.dumps(output_data) if output_data else None
             
-            # Get database session
-            with get_session() as session:
+            # Get database session using proper context manager
+            from database.session import get_db
+            with get_db() as session:
                 repo = AnalysisRepository(session)
                 repo.save_agent_decision(
                     agent_name=agent_name,

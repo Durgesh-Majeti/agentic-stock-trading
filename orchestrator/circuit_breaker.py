@@ -5,6 +5,7 @@ Prevents cascading failures by stopping calls to failing agents.
 """
 
 import time
+import asyncio
 from typing import Callable, Any, Optional
 from loguru import logger
 
@@ -44,13 +45,14 @@ class CircuitBreaker:
         self.state = "CLOSED"  # CLOSED, OPEN, HALF_OPEN
         self.half_open_calls = 0
         self.success_count = 0
+        self._lock = asyncio.Lock()  # Thread safety for state updates
     
     async def call(self, func: Callable, *args, **kwargs) -> Any:
         """
         Execute function with circuit breaker protection.
         
         Args:
-            func: Function to call
+            func: Function to call (can be sync or async)
             *args: Function arguments
             **kwargs: Function keyword arguments
         
@@ -60,52 +62,63 @@ class CircuitBreaker:
         Raises:
             CircuitBreakerOpenError: If circuit is open
         """
-        # Check if circuit is open
-        if self.state == "OPEN":
-            if self.last_failure_time and \
-               time.time() - self.last_failure_time > self.timeout:
-                # Try half-open
-                self.state = "HALF_OPEN"
-                self.half_open_calls = 0
-                self.success_count = 0
-                logger.info("Circuit breaker transitioning to HALF_OPEN")
-            else:
-                raise CircuitBreakerOpenError(
-                    f"Circuit breaker is OPEN. "
-                    f"Retry after {self.timeout} seconds"
-                )
+        # Thread-safe state check
+        async with self._lock:
+            # Check if circuit is open
+            if self.state == "OPEN":
+                if self.last_failure_time and \
+                   time.time() - self.last_failure_time > self.timeout:
+                    # Try half-open
+                    self.state = "HALF_OPEN"
+                    self.half_open_calls = 0
+                    self.success_count = 0
+                    logger.info("Circuit breaker transitioning to HALF_OPEN")
+                else:
+                    raise CircuitBreakerOpenError(
+                        f"Circuit breaker is OPEN. "
+                        f"Retry after {self.timeout} seconds"
+                    )
         
-        # Execute function
+        # Execute function with proper async/sync detection
         try:
-            result = await func(*args, **kwargs) if hasattr(func, '__call__') else func(*args, **kwargs)
+            # Use asyncio.iscoroutinefunction to properly detect async functions
+            if asyncio.iscoroutinefunction(func):
+                result = await func(*args, **kwargs)
+            else:
+                # Sync function - run in executor to avoid blocking event loop
+                result = await asyncio.get_event_loop().run_in_executor(
+                    None, lambda: func(*args, **kwargs)
+                )
             
-            # Success - update state
-            if self.state == "HALF_OPEN":
-                self.half_open_calls += 1
-                self.success_count += 1
-                if self.half_open_calls >= self.half_open_max_calls:
-                    self.state = "CLOSED"
+            # Thread-safe state update on success
+            async with self._lock:
+                if self.state == "HALF_OPEN":
+                    self.half_open_calls += 1
+                    self.success_count += 1
+                    if self.half_open_calls >= self.half_open_max_calls:
+                        self.state = "CLOSED"
+                        self.failure_count = 0
+                        logger.info("Circuit breaker CLOSED after recovery")
+                elif self.state == "CLOSED":
                     self.failure_count = 0
-                    logger.info("Circuit breaker CLOSED after recovery")
-            elif self.state == "CLOSED":
-                self.failure_count = 0
             
             return result
             
         except Exception as e:
-            # Failure - update state
-            self.failure_count += 1
-            self.last_failure_time = time.time()
-            
-            if self.state == "HALF_OPEN":
-                # Failed during half-open - go back to open
-                self.state = "OPEN"
-                logger.warning("Circuit breaker OPEN after half-open failure")
-            elif self.failure_count >= self.failure_threshold:
-                self.state = "OPEN"
-                logger.warning(
-                    f"Circuit breaker OPEN after {self.failure_count} failures"
-                )
+            # Thread-safe state update on failure
+            async with self._lock:
+                self.failure_count += 1
+                self.last_failure_time = time.time()
+                
+                if self.state == "HALF_OPEN":
+                    # Failed during half-open - go back to open
+                    self.state = "OPEN"
+                    logger.warning("Circuit breaker OPEN after half-open failure")
+                elif self.failure_count >= self.failure_threshold:
+                    self.state = "OPEN"
+                    logger.warning(
+                        f"Circuit breaker OPEN after {self.failure_count} failures"
+                    )
             
             raise
     

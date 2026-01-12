@@ -111,3 +111,68 @@ class TestEventBus:
         
         event_bus.clear_history()
         assert len(event_bus.event_history) == 0
+    
+    @pytest.mark.asyncio
+    async def test_event_history_deque(self, event_bus):
+        """Test that event history uses deque."""
+        from collections import deque
+        assert isinstance(event_bus.event_history, deque)
+        
+        # Test maxlen behavior
+        event_bus_with_limit = EventBus(max_history=5)
+        for i in range(10):
+            await event_bus_with_limit.publish("test.event", {"index": i})
+        
+        # Should only keep last 5 events
+        assert len(event_bus_with_limit.event_history) == 5
+    
+    @pytest.mark.asyncio
+    async def test_handler_retry_mechanism(self, event_bus):
+        """Test retry mechanism for failed handlers."""
+        call_count = 0
+        
+        async def failing_then_success_handler(data):
+            nonlocal call_count
+            call_count += 1
+            if call_count < 3:
+                raise ValueError("Temporary error")
+            return "success"
+        
+        event_bus.subscribe("test.event", failing_then_success_handler)
+        
+        # Should succeed after retries
+        await event_bus.publish("test.event", {})
+        
+        # Handler should have been called 3 times (2 failures + 1 success)
+        assert call_count == 3
+    
+    @pytest.mark.asyncio
+    async def test_dead_letter_queue(self, event_bus):
+        """Test dead letter queue for permanently failed handlers."""
+        async def always_failing_handler(data):
+            raise ValueError("Permanent error")
+        
+        event_bus.subscribe("test.event", always_failing_handler)
+        
+        # Publish event - handler should fail after all retries
+        await event_bus.publish("test.event", {"test": "data"})
+        
+        # Check dead letter queue
+        dlq = event_bus.get_dead_letter_queue()
+        assert len(dlq) == 1
+        assert dlq[0]["handler"] == "always_failing_handler"
+        assert "error" in dlq[0]
+    
+    @pytest.mark.asyncio
+    async def test_clear_dead_letter_queue(self, event_bus):
+        """Test clearing dead letter queue."""
+        async def failing_handler(data):
+            raise ValueError("Error")
+        
+        event_bus.subscribe("test.event", failing_handler)
+        await event_bus.publish("test.event", {})
+        
+        assert len(event_bus.get_dead_letter_queue()) > 0
+        
+        event_bus.clear_dead_letter_queue()
+        assert len(event_bus.get_dead_letter_queue()) == 0

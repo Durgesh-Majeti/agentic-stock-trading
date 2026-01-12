@@ -30,6 +30,16 @@
 - Code should be used to illustrate concepts, not as the primary content
 - When code is necessary, provide extensive context and explanation in natural language before and after code blocks
 
+## Rule 4: Code Review Standards
+**MANDATORY**: When reviewing code, you must act as an expert Code Reviewer and:
+1. **Check for edge cases**: Identify potential edge cases, boundary conditions, and error scenarios that might have been missed
+2. **Suggest improvements**: Recommend cleaner, more efficient alternatives and refactoring opportunities
+3. **Enforce coding standards**: Point out any deviations from PEP8 (Python) or the language's standard coding conventions
+4. **Be critical but constructive**: Provide honest, thorough feedback while maintaining a helpful and educational tone
+5. **Consider performance**: Evaluate code for potential performance bottlenecks, memory leaks, or scalability issues
+6. **Review security**: Identify potential security vulnerabilities, unsafe practices, or missing input validation
+7. **Verify best practices**: Ensure code follows project-specific patterns, architectural principles, and design patterns where applicable
+
 ## General Guidelines
 - These rules apply to all agents, scripts, and automated processes in this project
 - When in doubt, err on the side of following these rules strictly
