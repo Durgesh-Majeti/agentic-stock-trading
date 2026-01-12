@@ -98,7 +98,8 @@ class TestDataSourceManager:
         """Test successful getting of latest price."""
         mock_get_data.return_value = sample_ohlcv_data
         
-        result = data_source_manager.get_latest_price("RELIANCE")
+        # Use enforce_freshness=False since sample data is 5 days old
+        result = data_source_manager.get_latest_price("RELIANCE", enforce_freshness=False)
         
         assert result is not None
         assert result['symbol'] == "RELIANCE"
@@ -204,3 +205,76 @@ class TestDataSourceManager:
         assert len(result) == 2
         assert result[0]['symbol'] == 'RELIANCE'
         mock_get_symbols.assert_called_once()
+    
+    @patch('data_sources.data_source_manager.DataSourceManager.get_historical_data')
+    def test_get_latest_price_enforce_freshness_rejects_stale(self, mock_get_data, data_source_manager):
+        """Test that enforce_freshness=True rejects stale data."""
+        # Create data with old date
+        old_date = date.today() - timedelta(days=5)
+        old_data = pd.DataFrame({
+            'date': [old_date],
+            'open': [100.0],
+            'high': [105.0],
+            'low': [99.0],
+            'close': [103.0],
+            'volume': [1000000]
+        })
+        mock_get_data.return_value = old_data
+        
+        # With enforce_freshness=True, should reject stale data
+        result = data_source_manager.get_latest_price(
+            "RELIANCE",
+            max_age=timedelta(minutes=2),
+            enforce_freshness=True
+        )
+        
+        assert result is None  # Should reject stale data
+    
+    @patch('data_sources.data_source_manager.DataSourceManager.get_historical_data')
+    def test_get_latest_price_enforce_freshness_accepts_fresh(self, mock_get_data, data_source_manager):
+        """Test that enforce_freshness=True accepts fresh data."""
+        # Create fresh data (today's date)
+        fresh_date = date.today()
+        fresh_data = pd.DataFrame({
+            'date': [fresh_date],
+            'open': [100.0],
+            'high': [105.0],
+            'low': [99.0],
+            'close': [103.0],
+            'volume': [1000000]
+        })
+        mock_get_data.return_value = fresh_data
+        
+        result = data_source_manager.get_latest_price(
+            "RELIANCE",
+            max_age=timedelta(days=1),
+            enforce_freshness=True
+        )
+        
+        assert result is not None  # Should accept fresh data
+        assert result['symbol'] == "RELIANCE"
+    
+    @patch('data_sources.data_source_manager.DataSourceManager.get_historical_data')
+    def test_get_latest_price_enforce_freshness_false_allows_stale(self, mock_get_data, data_source_manager):
+        """Test that enforce_freshness=False allows stale data with warning."""
+        old_date = date.today() - timedelta(days=5)
+        old_data = pd.DataFrame({
+            'date': [old_date],
+            'open': [100.0],
+            'high': [105.0],
+            'low': [99.0],
+            'close': [103.0],
+            'volume': [1000000]
+        })
+        mock_get_data.return_value = old_data
+        
+        # With enforce_freshness=False, should allow stale data
+        result = data_source_manager.get_latest_price(
+            "RELIANCE",
+            max_age=timedelta(minutes=2),
+            enforce_freshness=False
+        )
+        
+        # Should return data even though it's stale
+        assert result is not None
+        assert result['symbol'] == "RELIANCE"

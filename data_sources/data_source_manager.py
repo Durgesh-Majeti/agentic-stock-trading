@@ -63,16 +63,19 @@ class DataSourceManager:
     def get_latest_price(
         self,
         symbol: str,
-        max_age: Optional[timedelta] = None
+        max_age: Optional[timedelta] = None,
+        enforce_freshness: bool = True
     ) -> Optional[Dict]:
-        """Get latest price for a symbol.
+        """
+        Get latest price for a symbol with freshness validation.
         
         Args:
             symbol: Stock symbol
             max_age: Maximum age of data (default: 2 minutes)
+            enforce_freshness: If True, reject stale data instead of warning
             
         Returns:
-            Dictionary with price data, or None if unavailable
+            Dictionary with price data, or None if unavailable or stale
         """
         if max_age is None:
             max_age = self.data_freshness_threshold
@@ -88,24 +91,48 @@ class DataSourceManager:
             latest = df.iloc[-1]
             
             # Check data freshness
+            data_timestamp = None
             if 'date' in latest:
                 data_date = latest['date']
                 if isinstance(data_date, str):
                     data_date = pd.to_datetime(data_date).date()
+                elif hasattr(data_date, 'date'):
+                    data_date = data_date.date()
                 
                 age = date.today() - data_date
-                if age > timedelta(days=1):
+                
+                # Enforce freshness if requested
+                if enforce_freshness and age > max_age:
+                    logger.error(
+                        f"Data for {symbol} is {age} old (max allowed: {max_age}). Rejecting stale data."
+                    )
+                    return None
+                elif age > timedelta(days=1):
                     logger.warning(f"Data for {symbol} is {age.days} days old")
+                
+                # Create timestamp from date
+                data_timestamp = datetime.combine(data_date, datetime.min.time())
             
-            return {
+            result = {
                 'symbol': symbol,
                 'open': float(latest['open']),
                 'high': float(latest['high']),
                 'low': float(latest['low']),
                 'close': float(latest['close']),
                 'volume': int(latest['volume']),
-                'timestamp': datetime.now()
+                'timestamp': data_timestamp or datetime.now()
             }
+            
+            # Validate freshness of timestamp
+            if enforce_freshness and data_timestamp:
+                age = datetime.now() - data_timestamp
+                if age > max_age:
+                    logger.error(
+                        f"Data timestamp for {symbol} is {age} old (max allowed: {max_age}). Rejecting stale data."
+                    )
+                    return None
+            
+            return result
             
         except Exception as e:
             logger.error(f"Error getting latest price for {symbol}: {e}")

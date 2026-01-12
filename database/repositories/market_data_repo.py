@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc, and_
 from typing import List, Optional
 from datetime import datetime, date, timedelta
+from loguru import logger
 from database.models import Stock, MarketDataDaily, MarketDataIntraday
 from config.constants import DAILY_DATA_RETENTION_DAYS, INTRADAY_DATA_RETENTION_DAYS
 
@@ -95,6 +96,68 @@ class MarketDataRepository:
         self.session.refresh(stock)
         return stock
     
+    def _validate_market_data(
+        self,
+        open: float,
+        high: float,
+        low: float,
+        close: float,
+        volume: int
+    ) -> bool:
+        """
+        Validate market data quality.
+        
+        Args:
+            open: Opening price
+            high: High price
+            low: Low price
+            close: Closing price
+            volume: Trading volume
+        
+        Returns:
+            True if valid, False otherwise
+        """
+        # Price range validation (0 to 1 million rupees per share)
+        max_price = 1000000.0
+        min_price = 0.0
+        
+        # Check all prices are positive and within range
+        for price_name, price_value in [("open", open), ("high", high), 
+                                        ("low", low), ("close", close)]:
+            if price_value < min_price or price_value > max_price:
+                logger.error(
+                    f"Invalid {price_name} price: {price_value} "
+                    f"(must be between {min_price} and {max_price})"
+                )
+                return False
+        
+        # High must be >= Low
+        if high < low:
+            logger.error(f"High price ({high}) must be >= Low price ({low})")
+            return False
+        
+        # Open and Close must be within High-Low range
+        if not (low <= open <= high):
+            logger.error(
+                f"Open price ({open}) must be within High-Low range "
+                f"({low} to {high})"
+            )
+            return False
+        
+        if not (low <= close <= high):
+            logger.error(
+                f"Close price ({close}) must be within High-Low range "
+                f"({low} to {high})"
+            )
+            return False
+        
+        # Volume must be non-negative
+        if volume < 0:
+            logger.error(f"Volume ({volume}) must be non-negative")
+            return False
+        
+        return True
+    
     def add_daily_data(
         self,
         stock_id: int,
@@ -106,7 +169,29 @@ class MarketDataRepository:
         volume: int,
         **indicators
     ) -> MarketDataDaily:
-        """Add or update daily market data."""
+        """
+        Add or update daily market data with validation.
+        
+        Args:
+            stock_id: Stock ID
+            date: Trading date
+            open: Opening price
+            high: High price
+            low: Low price
+            close: Closing price
+            volume: Trading volume
+            **indicators: Additional technical indicators
+        
+        Returns:
+            MarketDataDaily object
+        
+        Raises:
+            ValueError: If data validation fails
+        """
+        # Validate data quality before storage
+        if not self._validate_market_data(open, high, low, close, volume):
+            raise ValueError("Market data validation failed")
+        
         existing = self.session.query(MarketDataDaily).filter(
             MarketDataDaily.stock_id == stock_id,
             MarketDataDaily.date == date
@@ -116,6 +201,12 @@ class MarketDataRepository:
             # Update existing record
             for key, value in indicators.items():
                 if hasattr(existing, key):
+                    # Validate indicator values if they're prices
+                    if key in ['rsi', 'macd', 'macd_signal', 'macd_histogram']:
+                        # Technical indicators have specific ranges
+                        if not isinstance(value, (int, float)):
+                            logger.warning(f"Invalid indicator value type for {key}: {type(value)}")
+                            continue
                     setattr(existing, key, value)
             existing.open = open
             existing.high = high

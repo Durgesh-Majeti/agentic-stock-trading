@@ -1,7 +1,7 @@
 # Documentation Index
 
 **Project**: Agentic Stock Trading System  
-**Version**: 1.0  
+**Version**: 1.3.0  
 **Last Updated**: January 2025
 
 ---

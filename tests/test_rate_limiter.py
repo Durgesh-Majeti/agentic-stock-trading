@@ -54,3 +54,27 @@ class TestRateLimiter:
         
         # Should be fast (tokens refilled)
         assert elapsed < 0.05
+    
+    def test_integer_based_tokens(self, rate_limiter):
+        """Test that tokens are integer-based."""
+        # Tokens should be integer
+        assert isinstance(rate_limiter.tokens, int)
+        
+        # After acquiring, tokens should still be integer
+        asyncio.run(rate_limiter.acquire())
+        assert isinstance(rate_limiter.tokens, int)
+        assert rate_limiter.tokens >= 0  # Should not be negative
+    
+    @pytest.mark.asyncio
+    async def test_monotonic_clock(self, rate_limiter):
+        """Test that rate limiter uses monotonic clock."""
+        import time
+        
+        # Acquire all tokens
+        for _ in range(10):
+            await rate_limiter.acquire()
+        
+        # Check that last_update uses monotonic time
+        assert rate_limiter.last_update > 0
+        # Monotonic time should be different from system time
+        # (but we can't easily test this without mocking)

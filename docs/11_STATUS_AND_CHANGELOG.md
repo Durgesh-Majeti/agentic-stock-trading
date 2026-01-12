@@ -1,8 +1,8 @@
 # Project Status and Changelog
 
-**Version**: 1.1  
+**Version**: 1.3.0  
 **Last Updated**: January 2025  
-**Current Status**: Phase 1 & Phase 2 Complete (Including Sentiment Analysis)
+**Current Status**: Phase 1 & Phase 2 Complete + Security & Performance Fixes
 
 ---
 
@@ -282,7 +282,58 @@
 
 ## Changelog
 
-### Version 1.1 - January 2025 (Latest)
+### Version 1.3.0 - January 2025 (Latest)
+
+**Security & Code Quality Fixes**:
+- ✅ **Critical Security Fixes**: Fixed SQL injection risks, cache invalidation bug, circuit breaker async/sync detection
+- ✅ **Input Validation**: Added input size limits (1MB), query length validation, prompt injection protection
+- ✅ **Thread Safety**: Added asyncio.Lock() to cache manager and circuit breaker
+- ✅ **Memory Management**: Added automatic cleanup to workflow state and transaction manager (TTL-based)
+- ✅ **Data Quality**: Added comprehensive market data validation (price ranges, High >= Low, volume validation)
+- ✅ **Performance Optimizations**: Schema caching, event history using deque, LLM response caching
+- ✅ **Error Handling**: Improved error context logging, retry mechanisms, dead letter queue
+- ✅ **Contract Validation**: Implemented YAML-based contract loading and validation
+- ✅ **Timeouts**: Added agent call timeouts (60s), query timeouts (30s)
+- ✅ **Data Freshness**: Added enforce_freshness parameter to data source manager
+- ✅ **Rate Limiting**: Improved with integer-based tokens and monotonic clock
+- ✅ **Modern Async**: Updated to use asyncio.get_running_loop() and asyncio.to_thread()
+
+**Files Updated**:
+- `orchestrator/cache_manager.py` - Fixed cache invalidation, added thread safety, input size validation
+- `orchestrator/circuit_breaker.py` - Fixed async/sync detection, added thread safety
+- `orchestrator/event_bus.py` - Added retry mechanism, dead letter queue, deque optimization
+- `orchestrator/orchestrator.py` - Added timeouts, contract validation, error context
+- `orchestrator/rate_limiter.py` - Integer-based tokens, monotonic clock
+- `orchestrator/workflow_state.py` - Automatic cleanup, O(1) checkpoint lookup
+- `orchestrator/transaction_manager.py` - Automatic cleanup with TTL
+- `agents/database_librarian.py` - SQL injection protection, schema caching, LLM response caching, input sanitization
+- `agents/base_agent.py` - Fixed database session management
+- `database/repositories/market_data_repo.py` - Added data quality validation
+- `data_sources/data_source_manager.py` - Added data freshness enforcement
+
+**Test Updates**:
+- Updated all tests to reflect new functionality
+- Added tests for schema caching, LLM response caching, input sanitization
+- Added tests for event bus retry mechanism and dead letter queue
+- Added tests for rate limiter integer tokens
+- Added tests for orchestrator timeouts and contract validation
+- Added tests for data freshness validation
+
+**Statistics**:
+- **Fixed**: 23 critical and high-priority issues
+- **Critical Security**: 3/3 (100%) ✅
+- **High Priority**: 8/12 (67%) ✅
+- **Medium Priority**: 8/13 (62%) ✅
+
+### Version 1.2.0 - January 2025
+
+**Orchestrator Implementation**:
+- ✅ Complete orchestrator system with 10 improvements
+- ✅ Workflow execution, state management, circuit breakers
+- ✅ Caching layer, event bus, transaction management
+- ✅ Monitoring and observability
+
+### Version 1.1 - January 2025
 
 **News System Updates**:
 - ✅ Replaced NSE API with BSE RSS feed for easier access

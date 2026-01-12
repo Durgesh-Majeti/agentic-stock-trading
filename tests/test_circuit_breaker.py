@@ -84,3 +84,34 @@ class TestCircuitBreaker:
         
         assert circuit_breaker.get_state() == "CLOSED"
         assert circuit_breaker.failure_count == 0
+    
+    @pytest.mark.asyncio
+    async def test_sync_function_call(self, circuit_breaker):
+        """Test circuit breaker with synchronous function."""
+        def sync_func(x, y):
+            return x + y
+        
+        result = await circuit_breaker.call(sync_func, 2, 3)
+        assert result == 5
+        assert circuit_breaker.get_state() == "CLOSED"
+    
+    @pytest.mark.asyncio
+    async def test_async_function_call(self, circuit_breaker):
+        """Test circuit breaker with asynchronous function."""
+        async def async_func(x, y):
+            return x * y
+        
+        result = await circuit_breaker.call(async_func, 2, 3)
+        assert result == 6
+        assert circuit_breaker.get_state() == "CLOSED"
+    
+    @pytest.mark.asyncio
+    async def test_sync_function_failure(self, circuit_breaker):
+        """Test circuit breaker with failing synchronous function."""
+        def sync_failing_func():
+            raise ValueError("Sync error")
+        
+        with pytest.raises(ValueError):
+            await circuit_breaker.call(sync_failing_func)
+        
+        assert circuit_breaker.failure_count == 1

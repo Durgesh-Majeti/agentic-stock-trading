@@ -12,6 +12,9 @@ from typing import Dict, Any, Callable, Optional
 from collections import OrderedDict
 from loguru import logger
 
+# Maximum input size in bytes (1MB)
+MAX_INPUT_SIZE = 1024 * 1024
+
 
 class CacheManager:
     """
@@ -36,6 +39,7 @@ class CacheManager:
         self.max_size = max_size
         self.hits = 0
         self.misses = 0
+        self._lock = asyncio.Lock()  # Thread safety for async operations
     
     def get_cache_key(self, agent_name: str, input_data: Dict[str, Any]) -> str:
         """
@@ -71,30 +75,41 @@ class CacheManager:
         
         Returns:
             Agent output
+        
+        Raises:
+            ValueError: If input_data exceeds maximum size
         """
-        import asyncio
+        # Validate input size
+        input_size = len(json.dumps(input_data).encode('utf-8'))
+        if input_size > MAX_INPUT_SIZE:
+            raise ValueError(
+                f"Input data size ({input_size} bytes) exceeds maximum "
+                f"allowed size ({MAX_INPUT_SIZE} bytes)"
+            )
         
         cache_key = self.get_cache_key(agent_name, input_data)
         ttl = ttl or self.default_ttl
         
-        # Check cache
-        if cache_key in self.cache:
-            cached = self.cache[cache_key]
-            age = time.time() - cached["timestamp"]
-            # Use stored TTL for expiration check
-            stored_ttl = cached.get("ttl", self.default_ttl)
-            
-            if age < stored_ttl:
-                # Cache hit
-                self.hits += 1
-                logger.debug(f"Cache hit for {agent_name}")
-                # Move to end (LRU)
-                self.cache.move_to_end(cache_key)
-                return cached["data"]
-            else:
-                # Expired - remove
-                logger.debug(f"Cache expired for {agent_name}")
-                del self.cache[cache_key]
+        # Thread-safe cache access
+        async with self._lock:
+            # Check cache
+            if cache_key in self.cache:
+                cached = self.cache[cache_key]
+                age = time.time() - cached["timestamp"]
+                # Use stored TTL for expiration check
+                stored_ttl = cached.get("ttl", self.default_ttl)
+                
+                if age < stored_ttl:
+                    # Cache hit
+                    self.hits += 1
+                    logger.debug(f"Cache hit for {agent_name}")
+                    # Move to end (LRU)
+                    self.cache.move_to_end(cache_key)
+                    return cached["data"]
+                else:
+                    # Expired - remove
+                    logger.debug(f"Cache expired for {agent_name}")
+                    del self.cache[cache_key]
         
         # Cache miss - call agent
         self.misses += 1
@@ -109,12 +124,14 @@ class CacheManager:
                 None, call_func, input_data
             )
         
-        # Store in cache
-        self._store_in_cache(cache_key, result, ttl)
+        # Thread-safe cache storage
+        async with self._lock:
+            # Store in cache
+            self._store_in_cache(cache_key, result, ttl, agent_name)
         
         return result
     
-    def _store_in_cache(self, cache_key: str, data: Dict[str, Any], ttl: int):
+    def _store_in_cache(self, cache_key: str, data: Dict[str, Any], ttl: int, agent_name: str):
         """Store data in cache with size limit."""
         # Remove oldest if at capacity
         if len(self.cache) >= self.max_size:
@@ -122,17 +139,20 @@ class CacheManager:
             del self.cache[oldest_key]
             logger.debug(f"Evicted cache entry: {oldest_key}")
         
-        # Store new entry
+        # Store new entry with agent_name for invalidation
         self.cache[cache_key] = {
             "data": data,
             "timestamp": time.time(),
-            "ttl": ttl
+            "ttl": ttl,
+            "agent_name": agent_name
         }
         # Move to end (LRU)
         self.cache.move_to_end(cache_key)
     
     def clear(self):
         """Clear all cache entries."""
+        # Note: This is a sync method, but cache operations should be thread-safe
+        # In async context, use async with lock if needed
         self.cache.clear()
         self.hits = 0
         self.misses = 0
@@ -161,13 +181,14 @@ class CacheManager:
         """
         if agent_name:
             # Remove entries for specific agent
+            # Now that agent_name is stored in cache entries, this will work correctly
             keys_to_remove = [
-                key for key in self.cache.keys()
-                if key.startswith(agent_name)
+                key for key, entry in self.cache.items()
+                if entry.get("agent_name") == agent_name
             ]
             for key in keys_to_remove:
                 del self.cache[key]
-            logger.info(f"Invalidated cache for {agent_name}")
+            logger.info(f"Invalidated {len(keys_to_remove)} cache entries for {agent_name}")
         else:
             # Clear all
             self.clear()
