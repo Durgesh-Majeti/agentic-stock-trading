@@ -16,11 +16,11 @@ def yfinance_fetcher():
 
 @pytest.fixture
 def sample_csv_content():
-    """Sample CSV content for Nifty 500 list."""
-    return """Symbol,Company Name,Sector
-RELIANCE,Reliance Industries Ltd,Energy
-TCS,Tata Consultancy Services Ltd,Information Technology
-HDFCBANK,HDFC Bank Ltd,Financial Services"""
+    """Sample CSV content for Nifty 500 list - NSE actual format."""
+    return """Company Name,Industry,Symbol,Series,ISIN Code
+Reliance Industries Ltd,Energy,RELIANCE,EQ,INE002A01018
+Tata Consultancy Services Ltd,Information Technology,TCS,EQ,INE467B01029
+HDFC Bank Ltd,Financial Services,HDFCBANK,EQ,INE040A01026"""
 
 
 @pytest.fixture
@@ -98,7 +98,8 @@ class TestYFinanceFetcher:
     @patch('data_sources.yfinance_fetcher.requests.get')
     def test_get_nifty_500_symbols_handles_missing_sector(self, mock_get, yfinance_fetcher):
         """Test handling of missing sector information."""
-        csv_content = "Symbol,Company Name\nRELIANCE,Reliance Industries Ltd"
+        # NSE format but with empty Industry column
+        csv_content = "Company Name,Industry,Symbol,Series,ISIN Code\nReliance Industries Ltd,,RELIANCE,EQ,INE002A01018"
         mock_response = MagicMock()
         mock_response.text = csv_content
         mock_response.content = csv_content.encode('utf-8')
@@ -107,7 +108,9 @@ class TestYFinanceFetcher:
         
         symbols = yfinance_fetcher.get_nifty_500_symbols()
         
-        assert symbols[0]['sector'] is None
+        assert len(symbols) == 1
+        assert symbols[0]['symbol'] == 'RELIANCE'
+        assert symbols[0]['sector'] is None or symbols[0]['sector'] == ''  # Empty string or None
     
     @patch('data_sources.yfinance_fetcher.requests.get')
     def test_get_nifty_500_symbols_handles_network_error(self, mock_get, yfinance_fetcher):

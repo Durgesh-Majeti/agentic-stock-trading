@@ -14,6 +14,7 @@ from utils.helpers import (
     calculate_pnl_percentage,
     calculate_stop_loss_price,
     calculate_target_price,
+    get_nifty_500_symbols,
     ensure_directory,
     load_json_file,
     save_json_file,
@@ -156,3 +157,11 @@ class TestUtilityFunctions:
         """Test rounding."""
         assert round_to_precision(10.12345, 2) == 10.12
         assert round_to_precision(10.12345, 0) == 10.0
+    
+    def test_get_nifty_500_symbols(self):
+        """Test getting Nifty 500 symbols."""
+        symbols = get_nifty_500_symbols()
+        assert isinstance(symbols, list)
+        assert len(symbols) > 0
+        assert "RELIANCE" in symbols
+        assert "TCS" in symbols

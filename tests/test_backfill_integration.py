@@ -10,16 +10,22 @@ from database.repositories.market_data_repo import MarketDataRepository
 
 @pytest.fixture
 def sample_ohlcv_data():
-    """Sample OHLCV DataFrame with enough rows for indicators."""
+    """Sample OHLCV DataFrame with enough rows for indicators.
+    
+    yfinance returns DataFrame with DatetimeIndex, not a date column.
+    The code will reset_index() to convert index to 'Date' column, then rename to 'date'.
+    """
     dates = pd.date_range(start=date.today() - timedelta(days=50), periods=50, freq='D')
-    return pd.DataFrame({
-        'date': dates.date,
-        'open': [100.0 + i * 0.5 for i in range(50)],
-        'high': [105.0 + i * 0.5 for i in range(50)],
-        'low': [99.0 + i * 0.5 for i in range(50)],
-        'close': [103.0 + i * 0.5 for i in range(50)],
-        'volume': [1000000 + i * 10000 for i in range(50)]
-    })
+    # yfinance format: DatetimeIndex with Open, High, Low, Close, Volume columns
+    df = pd.DataFrame({
+        'Open': [100.0 + i * 0.5 for i in range(50)],
+        'High': [105.0 + i * 0.5 for i in range(50)],
+        'Low': [99.0 + i * 0.5 for i in range(50)],
+        'Close': [103.0 + i * 0.5 for i in range(50)],
+        'Volume': [1000000 + i * 10000 for i in range(50)]
+    }, index=dates)
+    # The index will be converted to 'Date' column when reset_index() is called
+    return df
 
 
 @pytest.mark.integration

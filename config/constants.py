@@ -39,6 +39,8 @@ class AgentName(str, Enum):
     DATABASE_LIBRARIAN = "database_librarian"
     DATA_SCRAPER = "data_scraper"
     TELEGRAM_ASSISTANT = "telegram_assistant"
+    NEWS_SENTIMENT_ANALYST = "news_sentiment_analyst"
+    PORTFOLIO_GUARDIAN = "portfolio_guardian"
 
 
 class Exchange(str, Enum):

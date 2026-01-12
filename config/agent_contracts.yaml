@@ -1,0 +1,423 @@
+# Agent Input/Output Contracts
+# Version: 1.0
+# Last Updated: January 2025
+#
+# Defines the expected input and output schemas for each agent.
+# Used by orchestrator for data validation and transformation.
+
+agents:
+  # Database Librarian Agent
+  librarian:
+    description: "Natural language to SQL translator"
+    input:
+      query:
+        type: string
+        required: true
+        description: "Natural language query"
+        example: "Show me oversold RSI stocks today"
+      max_results:
+        type: integer
+        required: false
+        default: 15
+        description: "Maximum number of results to return"
+      filters:
+        type: object
+        required: false
+        description: "Additional filters"
+        properties:
+          sector:
+            type: string
+          min_confidence:
+            type: float
+    
+    output:
+      sql:
+        type: string
+        required: true
+        description: "Generated SQL query"
+      results:
+        type: array
+        required: true
+        description: "Query results"
+        items:
+          type: object
+      count:
+        type: integer
+        required: true
+        description: "Number of results"
+      execution_time:
+        type: float
+        required: false
+        description: "Query execution time in seconds"
+    
+    validation:
+      - "results.length <= max_results"
+      - "sql must not contain DROP, DELETE, TRUNCATE"
+
+  # Data Scraper Agent
+  scraper:
+    description: "Multi-source data collection"
+    input:
+      symbol:
+        type: string
+        required: true
+        description: "Stock symbol (e.g., 'NSE|TCS-EQ')"
+        pattern: "^NSE\\|.*-EQ$"
+      type:
+        type: string
+        required: true
+        enum: [live, historical]
+        description: "Data type to fetch"
+      validate:
+        type: boolean
+        required: false
+        default: true
+        description: "Validate data quality"
+      calculate_indicators:
+        type: boolean
+        required: false
+        default: true
+        description: "Calculate technical indicators"
+      days:
+        type: integer
+        required: false
+        default: 730
+        description: "Number of days for historical data"
+    
+    output:
+      symbol:
+        type: string
+        required: true
+      data:
+        type: object
+        required: true
+        description: "OHLCV data"
+        properties:
+          open:
+            type: float
+            required: true
+          high:
+            type: float
+            required: true
+          low:
+            type: float
+            required: true
+          close:
+            type: float
+            required: true
+          volume:
+            type: integer
+            required: true
+          date:
+            type: string
+            format: date
+      indicators:
+        type: object
+        required: true
+        description: "29 technical indicators"
+      source:
+        type: string
+        required: true
+        enum: [shoonya, upstox, yfinance]
+      valid:
+        type: boolean
+        required: true
+        description: "Data validation result"
+      timestamp:
+        type: string
+        format: datetime
+        required: true
+    
+    validation:
+      - "data.high >= data.low"
+      - "data.close >= data.low && data.close <= data.high"
+      - "valid == true if validate == true"
+
+  # Strategy Specialist Agent
+  strategy:
+    description: "Swing trading signal generator"
+    input:
+      symbol:
+        type: string
+        required: true
+      market_data:
+        type: object
+        required: true
+        description: "OHLCV data"
+      indicators:
+        type: object
+        required: true
+        description: "29 technical indicators"
+      sentiment:
+        type: object
+        required: false
+        description: "Sentiment scores"
+        properties:
+          overall_sentiment:
+            type: float
+            range: [-1, 1]
+          confidence:
+            type: float
+            range: [0, 1]
+          components:
+            type: object
+      portfolio_context:
+        type: object
+        required: false
+        description: "Current portfolio state"
+        properties:
+          sector_exposure:
+            type: object
+          total_exposure:
+            type: float
+    
+    output:
+      action:
+        type: string
+        required: true
+        enum: [BUY, SELL, HOLD]
+      symbol:
+        type: string
+        required: true
+      entry_price:
+        type: float
+        required: true
+        description: "Entry price"
+        validation: "> 0"
+      sl_price:
+        type: float
+        required: true
+        description: "Stop loss price"
+        validation: "sl_price < entry_price if action == BUY"
+      target_price:
+        type: float
+        required: true
+        description: "Target price"
+        validation: "target_price > entry_price if action == BUY"
+      confidence:
+        type: float
+        required: true
+        range: [0, 100]
+        description: "Confidence score (0-100%)"
+      reasoning:
+        type: string
+        required: true
+        description: "Reasoning for the signal"
+      risk_reward:
+        type: float
+        required: true
+        description: "Risk to reward ratio"
+        validation: ">= 2.0 if action == BUY"
+      position_size:
+        type: integer
+        required: false
+        description: "Recommended position size"
+    
+    validation:
+      - "confidence >= 75 if action == BUY"
+      - "sl_price < entry_price if action == BUY"
+      - "target_price > entry_price if action == BUY"
+      - "risk_reward >= 2.0 if action == BUY"
+
+  # Telegram Assistant Agent
+  telegram:
+    description: "User interface and interaction"
+    input:
+      user_id:
+        type: integer
+        required: true
+        description: "Telegram user ID"
+      message_type:
+        type: string
+        required: true
+        enum: [signals, status, alert, order_confirmation, query_response]
+      signals:
+        type: array
+        required: false
+        description: "Trading signals to present"
+        items:
+          type: object
+      query:
+        type: string
+        required: false
+        description: "User query"
+      order:
+        type: object
+        required: false
+        description: "Order details"
+      message:
+        type: string
+        required: false
+        description: "Custom message"
+    
+    output:
+      sent:
+        type: boolean
+        required: true
+        description: "Whether message was sent successfully"
+      message_id:
+        type: integer
+        required: false
+        description: "Telegram message ID"
+      error:
+        type: string
+        required: false
+        description: "Error message if failed"
+    
+    validation:
+      - "sent == true on success"
+
+  # News Sentiment Analyst Agent
+  sentiment:
+    description: "News aggregation and sentiment analysis"
+    input:
+      symbols:
+        type: array
+        required: false
+        description: "Stock symbols to analyze"
+        items:
+          type: string
+      lookback_days:
+        type: integer
+        required: false
+        default: 1
+        description: "Number of days to look back"
+      sources:
+        type: array
+        required: false
+        default: ["all"]
+        description: "News sources to fetch from"
+        items:
+          type: string
+      article:
+        type: object
+        required: false
+        description: "Single article to analyze"
+    
+    output:
+      sentiment_scores:
+        type: object
+        required: true
+        description: "Sentiment scores per symbol"
+        additionalProperties:
+          type: object
+          properties:
+            overall_sentiment:
+              type: float
+              range: [-1, 1]
+            confidence:
+              type: float
+              range: [0, 1]
+            components:
+              type: object
+              properties:
+                stock_specific:
+                  type: float
+                sector:
+                  type: float
+                macro:
+                  type: float
+      article_count:
+        type: integer
+        required: false
+        description: "Number of articles analyzed"
+      analyzed_articles:
+        type: array
+        required: false
+        description: "Analyzed article results"
+        items:
+          type: object
+    
+    validation:
+      - "sentiment_scores values must have overall_sentiment in [-1, 1]"
+
+  # Portfolio Guardian Agent
+  guardian:
+    description: "Portfolio monitoring and risk management"
+    input:
+      portfolio_id:
+        type: integer
+        required: false
+        description: "Portfolio ID"
+      position:
+        type: object
+        required: false
+        description: "Single position to check"
+      trade_id:
+        type: integer
+        required: false
+        description: "Trade ID to start monitoring"
+    
+    output:
+      positions:
+        type: array
+        required: false
+        description: "Open positions"
+        items:
+          type: object
+      breached_positions:
+        type: array
+        required: false
+        description: "Positions that breached stop loss"
+        items:
+          type: object
+      alerts:
+        type: array
+        required: false
+        description: "Generated alerts"
+        items:
+          type: object
+      portfolio_heat:
+        type: float
+        required: false
+        description: "Portfolio heat percentage"
+        range: [0, 100]
+    
+    validation:
+      - "portfolio_heat <= 100"
+
+  # Trading Service (Not an agent, but used by orchestrator)
+  trading_service:
+    description: "Order execution service"
+    input:
+      signal:
+        type: object
+        required: true
+        description: "Trade signal"
+      order:
+        type: object
+        required: false
+        description: "Order details"
+      positions:
+        type: array
+        required: false
+        description: "Positions to exit"
+    
+    output:
+      order_id:
+        type: string
+        required: true
+        description: "Broker order ID"
+      trade_id:
+        type: integer
+        required: true
+        description: "Internal trade ID"
+      status:
+        type: string
+        required: true
+        enum: [pending, executed, failed, cancelled]
+      order:
+        type: object
+        required: false
+        description: "Order details"
+    
+    validation:
+      - "status must be one of: pending, executed, failed, cancelled"
+
+# Global validation rules
+global_validation:
+  - "All required fields must be present"
+  - "Type checking must pass"
+  - "Range validations must pass"
+  - "Enum values must be valid"
+  - "Pattern matching for strings"
