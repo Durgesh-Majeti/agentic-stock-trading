@@ -169,3 +169,31 @@ class TestCacheManager:
         cache_manager.invalidate()
         
         assert len(cache_manager.cache) == 0
+    
+    @pytest.mark.asyncio
+    async def test_concurrent_cache_misses_thread_safety(self, cache_manager):
+        """Test that concurrent cache misses are properly counted (thread-safety)."""
+        async def call_func(input_data):
+            await asyncio.sleep(0.01)  # Small delay to allow concurrency
+            return {"result": input_data["value"]}
+        
+        # Create multiple concurrent cache misses with different keys
+        num_concurrent = 20
+        tasks = [
+            cache_manager.get_or_call(
+                "test_agent",
+                {"value": i},
+                call_func
+            )
+            for i in range(num_concurrent)
+        ]
+        
+        # Execute all concurrently
+        await asyncio.gather(*tasks)
+        
+        # Verify all misses were counted correctly
+        stats = cache_manager.get_stats()
+        assert stats["misses"] == num_concurrent, \
+            f"Expected {num_concurrent} misses, got {stats['misses']}"
+        assert stats["hits"] == 0
+        assert stats["total_requests"] == num_concurrent

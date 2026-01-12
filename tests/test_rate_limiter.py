@@ -78,3 +78,37 @@ class TestRateLimiter:
         assert rate_limiter.last_update > 0
         # Monotonic time should be different from system time
         # (but we can't easily test this without mocking)
+    
+    @pytest.mark.asyncio
+    async def test_token_recalculation_after_wait(self, rate_limiter):
+        """Test that tokens are properly recalculated after waiting."""
+        # Use all tokens
+        for _ in range(10):
+            await rate_limiter.acquire()
+        
+        # Verify we're at 0 tokens
+        assert rate_limiter.tokens == 0
+        
+        # Record last_update before waiting
+        last_update_before = rate_limiter.last_update
+        
+        # Try to acquire - should wait and then recalculate
+        await rate_limiter.acquire()
+        
+        # After waiting and acquiring, last_update should be updated
+        assert rate_limiter.last_update > last_update_before
+        
+        # Tokens should be properly deducted (should be 0 after acquiring 1 token from empty bucket)
+        # Since we waited for 1 token (0.1s at rate 10), we should have 0 tokens left
+        assert rate_limiter.tokens == 0
+        
+        # Wait a bit for tokens to refill
+        await asyncio.sleep(0.15)
+        
+        # Next acquire should be fast (tokens refilled)
+        start = asyncio.get_event_loop().time()
+        await rate_limiter.acquire()
+        elapsed = asyncio.get_event_loop().time() - start
+        
+        # Should be fast because tokens were refilled
+        assert elapsed < 0.05
