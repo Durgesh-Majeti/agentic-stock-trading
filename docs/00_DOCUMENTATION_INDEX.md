@@ -166,6 +166,86 @@ This documentation set provides comprehensive guidance for **creating, maintaini
 
 ---
 
+### 13. [Orchestrator Design](13_ORCHESTRATOR_DESIGN.md)
+**Purpose**: Complete orchestrator design with 10 improvements
+
+**Contents**:
+- Orchestrator architecture and principles
+- All 10 improvements (parallel execution, state management, etc.)
+- Component details and implementation
+- Workflow definitions (YAML)
+- Data contracts
+- Error handling strategies
+- Performance optimization
+- Implementation guide
+
+**Use When**:
+- Implementing orchestrator
+- Understanding workflow execution
+- Designing new workflows
+- Debugging orchestrator issues
+- Performance optimization
+
+---
+
+### 14. [Agent-Orchestrator Integration](AGENT_ORCHESTRATOR_INTEGRATION.md)
+**Purpose**: Guide for integrating agents with orchestrator
+
+**Contents**:
+- Agent-orchestrator design principles
+- Contract-based communication
+- Agent implementation requirements
+- How orchestrator calls agents
+- Data flow patterns
+- Integration checklist
+- Testing strategies
+
+**Use When**:
+- Implementing agents (Phase 3)
+- Understanding agent-orchestrator interaction
+- Ensuring contract compliance
+- Testing agent integration
+- Debugging agent issues
+
+---
+
+### 15. [Phase 3.1 Base Agent Complete](PHASE3_BASE_AGENT_COMPLETE.md)
+**Purpose**: Documentation for completed Base Agent Framework
+
+**Contents**:
+- Implementation summary
+- Key features
+- Usage examples
+- Test results
+- Integration with orchestrator
+
+**Use When**:
+- Understanding BaseAgent implementation
+- Implementing new agents
+- Testing agent framework
+- Reference for agent development
+
+---
+
+### 16. [Phase 3.2 Database Librarian Complete](PHASE3_2_DATABASE_LIBRARIAN_COMPLETE.md)
+**Purpose**: Documentation for completed Database Librarian Agent
+
+**Contents**:
+- Implementation summary
+- NL to SQL translation
+- Schema awareness
+- Query safety validation
+- Usage examples
+- Test results
+
+**Use When**:
+- Understanding Database Librarian implementation
+- Using NL to SQL translation
+- Testing database queries
+- Reference for agent development
+
+---
+
 ### 9. [Sentiment Analysis System](09_SENTIMENT_ANALYSIS_SYSTEM.md)
 **Purpose**: Complete guide to news sentiment analysis integration
 
@@ -467,6 +547,7 @@ This documentation set provides comprehensive guidance for **creating, maintaini
 **Troubleshooting**: [06_TROUBLESHOOTING_AND_DEBUGGING.md](06_TROUBLESHOOTING_AND_DEBUGGING.md)  
 **Testing**: [07_TESTING_AND_QUALITY_ASSURANCE.md](07_TESTING_AND_QUALITY_ASSURANCE.md)  
 **Maintenance**: [08_MAINTENANCE_AND_UPGRADE.md](08_MAINTENANCE_AND_UPGRADE.md)  
+**Orchestrator**: [13_ORCHESTRATOR_DESIGN.md](13_ORCHESTRATOR_DESIGN.md)  
 **Sentiment Analysis**: [09_SENTIMENT_ANALYSIS_SYSTEM.md](09_SENTIMENT_ANALYSIS_SYSTEM.md)  
 **Free Sources**: [10_FREE_SENTIMENT_SOURCES.md](10_FREE_SENTIMENT_SOURCES.md)  
 **Status & Changelog**: [11_STATUS_AND_CHANGELOG.md](11_STATUS_AND_CHANGELOG.md)  

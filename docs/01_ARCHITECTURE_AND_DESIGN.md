@@ -555,36 +555,56 @@ Bot: "Order placed: 77 TCS @ ₹3245
 
 ## Component Details
 
-### Main Orchestrator (`main.py`)
+### Main Orchestrator (`orchestrator/orchestrator.py`)
 
 **Responsibilities**:
-- Initialize all agents
+- Initialize all agents (with dependency injection)
 - Coordinate agent interactions
-- Handle workflow execution
-- Manage error recovery
+- Execute workflows (parallel/sequential)
+- Manage workflow state and checkpoints
+- Handle error recovery (retries, circuit breakers)
+- Cache management
+- Event-driven communication
+- Transaction management
+- Monitoring and observability
 - Graceful shutdown
+
+**Key Features** (10 Improvements):
+1. **Parallel Execution**: Configurable concurrency with rate limiting
+2. **State Management**: Checkpoint-based state persistence
+3. **Workflow Configuration**: YAML-based workflow definitions
+4. **Dependency Injection**: Testable, mockable components
+5. **Observability**: Comprehensive metrics and monitoring
+6. **Circuit Breakers**: Prevent cascading failures
+7. **Event Bus**: Event-driven architecture
+8. **Transactions**: Atomic workflow execution with rollback
+9. **Caching**: Multi-level caching with TTL
+10. **Workflow Composition**: Reusable sub-workflows
+
+**Architecture**:
+```
+TradingOrchestrator
+├── WorkflowExecutor (parallel execution, rate limiting)
+├── WorkflowStateManager (checkpoints, persistence)
+├── WorkflowRegistry (YAML-based workflows)
+├── CircuitBreaker (failure protection)
+├── CacheManager (caching layer)
+├── EventBus (pub/sub events)
+├── TransactionManager (atomic workflows)
+├── OrchestratorMonitor (metrics, observability)
+└── WorkflowComposer (workflow composition)
+```
 
 **Key Functions**:
 ```python
-async def main():
-    # Initialize agents
-    librarian = DatabaseLibrarian()
-    scraper = DataScraper()
-    strategy = StrategySpecialist()
-    telegram = TelegramAssistant()
-    guardian = PortfolioGuardian()
-    
-    # Start background tasks
-    asyncio.create_task(guardian.monitor_loop())
-    asyncio.create_task(telegram.start_polling())
-    
-    # Main signal generation loop
-    while True:
-        if is_market_hours():
-            # Generate signals
-            ...
-        await asyncio.sleep(300)  # 5 minutes
+class TradingOrchestrator:
+    async def execute_workflow(workflow_name: str, request_data: Dict) -> Dict
+    async def _call_agent(agent_name: str, input_data: Dict) -> Dict
+    def _format_agent_input(agent_name: str, raw_data: Dict) -> Dict
+    def _validate_agent_output(agent_name: str, output: Dict) -> bool
 ```
+
+**See**: [Orchestrator Design Document](13_ORCHESTRATOR_DESIGN.md) for complete details.
 
 ### Database Layer
 

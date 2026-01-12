@@ -1,0 +1,36 @@
+# Project Rules for Agentic Stock Trading System
+
+## Rule 1: Virtual Environment Activation
+**MANDATORY**: When executing any Python script or command, the virtual environment MUST be activated first.
+- Virtual environment name: `venv`
+- On Windows: `venv\Scripts\activate` or `.venv\Scripts\activate`
+- On Linux/Mac: `source venv/bin/activate` or `.venv/bin/activate`
+- Always verify the virtual environment is active before running Python scripts, tests, or package installations
+- If a script needs to be run, ensure the activation command is included in the execution context
+
+## Rule 2: Document Management Preference
+**MANDATORY**: When creating or updating documentation:
+- **ALWAYS** check for existing documentation files first before creating new ones
+- **PREFER** updating existing documents over creating new documents
+- Only create a new document if:
+  - No existing document covers the topic
+  - The topic is fundamentally different and requires separate documentation
+  - The existing document structure would be compromised by adding the new content
+- Search the `docs/` directory and root directory for relevant existing documentation before creating new files
+
+## Rule 3: Documentation Content Style
+**MANDATORY**: All documentation must follow this content ratio:
+- **Less than 50% code**: Code examples, snippets, and technical implementations should comprise less than half of the document content
+- **More than 50% natural language**: The majority of documentation should be written in clear, natural language explaining:
+  - Concepts and rationale
+  - Architecture decisions
+  - Usage instructions
+  - Troubleshooting guidance
+  - Best practices and patterns
+- Code should be used to illustrate concepts, not as the primary content
+- When code is necessary, provide extensive context and explanation in natural language before and after code blocks
+
+## General Guidelines
+- These rules apply to all agents, scripts, and automated processes in this project
+- When in doubt, err on the side of following these rules strictly
+- If a rule conflicts with a specific task requirement, document the exception and rationale

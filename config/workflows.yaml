@@ -1,0 +1,300 @@
+# Workflow Definitions for Trading Orchestrator
+# Version: 1.0
+# Last Updated: January 2025
+
+workflows:
+  # Signal Generation Workflow
+  # Generates trading signals from user query
+  signal_generation:
+    name: "Signal Generation"
+    description: "Generate trading signals from user query or screening criteria"
+    version: "1.0"
+    
+    steps:
+      # Step 1: Find candidate stocks using Librarian
+      - step: "find_candidates"
+        agent: "librarian"
+        input_mapping:
+          query: "request.query"
+          max_results: "request.max_results || 15"
+        retry_config:
+          max_retries: 3
+          backoff: "exponential"
+          initial_delay: 1
+        timeout: 30
+        cache: false  # Don't cache queries
+        
+      # Step 2: Fetch live data for all candidates (parallel)
+      - step: "fetch_data"
+        agent: "scraper"
+        input_mapping:
+          symbol: "previous.candidates[*].symbol"
+        parallel: true
+        max_concurrent: 5
+        rate_limit: 10  # 10 requests per second
+        retry_config:
+          max_retries: 2
+          backoff: "linear"
+          initial_delay: 2
+        timeout: 60
+        cache: true
+        cache_ttl: 120  # 2 minutes
+        
+      # Step 3: Analyze sentiment (optional, can run in parallel with fetch_data)
+      - step: "analyze_sentiment"
+        agent: "sentiment"
+        input_mapping:
+          symbols: "previous.candidates[*].symbol"
+          lookback_days: 1
+        conditions:
+          include_sentiment: "request.include_sentiment || true"
+        parallel: true  # Can run parallel with fetch_data
+        retry_config:
+          max_retries: 2
+          backoff: "exponential"
+        timeout: 120
+        cache: true
+        cache_ttl: 300  # 5 minutes
+        
+      # Step 4: Generate signals for each candidate (parallel)
+      - step: "generate_signals"
+        agent: "strategy"
+        input_mapping:
+          symbol: "previous.candidates[*].symbol"
+          market_data: "fetch_data.data"
+          indicators: "fetch_data.indicators"
+          sentiment: "analyze_sentiment.sentiment_scores"
+          portfolio_context: "request.portfolio_context"
+        parallel: true
+        max_concurrent: 3  # Lower concurrency for LLM calls
+        retry_config:
+          max_retries: 2
+          backoff: "exponential"
+        timeout: 180
+        cache: false  # Don't cache strategy decisions
+        filter:
+          confidence: ">= 75"  # Only signals with confidence >= 75%
+        
+      # Step 5: Present signals to user via Telegram
+      - step: "present_signals"
+        agent: "telegram"
+        input_mapping:
+          user_id: "request.user_id"
+          signals: "generate_signals.signals"
+          query: "request.query"
+        timeout: 10
+        retry_config:
+          max_retries: 1
+    
+    # Steps that can run in parallel
+    parallel_steps:
+      - ["fetch_data", "analyze_sentiment"]
+    
+    # Error handling strategy
+    error_handling:
+      on_failure: "partial"  # partial, rollback, continue
+      retry_workflow: false
+      fallback_strategy: "return_partial_results"
+    
+    # Transaction settings
+    transaction:
+      enabled: false  # No transaction needed for read-only workflow
+      rollback_on_failure: false
+
+  # Trade Execution Workflow
+  # Executes approved trade
+  trade_execution:
+    name: "Trade Execution"
+    description: "Execute approved trade signal"
+    version: "1.0"
+    
+    steps:
+      # Step 1: Validate trade constraints
+      - step: "validate_trade"
+        agent: "strategy"
+        input_mapping:
+          signal_id: "request.signal_id"
+          portfolio_context: "request.portfolio_context"
+        timeout: 10
+        retry_config:
+          max_retries: 1
+        
+      # Step 2: Execute order via Trading Service
+      - step: "execute_order"
+        agent: "trading_service"
+        input_mapping:
+          signal: "validate_trade.signal"
+        retry_config:
+          max_retries: 3
+          backoff: "exponential"
+          initial_delay: 1
+        timeout: 30
+        circuit_breaker:
+          enabled: true
+          failure_threshold: 3
+          timeout: 60
+        
+      # Step 3: Notify user of execution
+      - step: "notify_user"
+        agent: "telegram"
+        input_mapping:
+          user_id: "request.user_id"
+          order: "execute_order.order"
+          message_type: "order_confirmation"
+        timeout: 10
+        retry_config:
+          max_retries: 2
+        
+      # Step 4: Start monitoring position
+      - step: "start_monitoring"
+        agent: "guardian"
+        input_mapping:
+          trade_id: "execute_order.trade_id"
+        timeout: 5
+        # Publish event instead of direct call
+        event:
+          type: "trade.executed"
+          data: "execute_order.order"
+    
+    error_handling:
+      on_failure: "rollback"  # Rollback on any failure
+      retry_workflow: false
+    
+    transaction:
+      enabled: true  # Transaction required for trade execution
+      rollback_on_failure: true
+      checkpoints:
+        - "validate_trade"
+        - "execute_order"
+
+  # User Query Workflow
+  # Handles natural language queries from Telegram
+  user_query:
+    name: "User Query"
+    description: "Handle natural language query from user"
+    version: "1.0"
+    
+    steps:
+      # Step 1: Route query to appropriate workflow
+      - step: "route_query"
+        agent: "telegram"
+        input_mapping:
+          query: "request.query"
+          user_id: "request.user_id"
+        timeout: 5
+        
+      # Step 2: Execute signal generation if needed
+      - step: "generate_signals"
+        workflow: "signal_generation"  # Reference to another workflow
+        input_mapping:
+          query: "route_query.processed_query"
+          user_id: "request.user_id"
+          include_sentiment: true
+        conditions:
+          query_type: "signal_generation"
+    
+    error_handling:
+      on_failure: "continue"
+      retry_workflow: false
+
+  # Portfolio Monitoring Workflow
+  # Monitors open positions (runs every 5 minutes)
+  portfolio_monitoring:
+    name: "Portfolio Monitoring"
+    description: "Monitor open positions and execute stop losses"
+    version: "1.0"
+    
+    steps:
+      # Step 1: Get open positions
+      - step: "get_positions"
+        agent: "guardian"
+        input_mapping:
+          portfolio_id: "request.portfolio_id"
+        timeout: 10
+        
+      # Step 2: Check each position (parallel)
+      - step: "check_positions"
+        agent: "guardian"
+        input_mapping:
+          position: "get_positions.positions[*]"
+        parallel: true
+        max_concurrent: 10
+        timeout: 30
+        
+      # Step 3: Execute stop losses if needed
+      - step: "execute_stop_losses"
+        agent: "trading_service"
+        input_mapping:
+          positions: "check_positions.breached_positions"
+        conditions:
+          has_breaches: "check_positions.breached_positions.length > 0"
+        timeout: 60
+        
+      # Step 4: Send alerts
+      - step: "send_alerts"
+        agent: "telegram"
+        input_mapping:
+          alerts: "check_positions.alerts"
+        conditions:
+          has_alerts: "check_positions.alerts.length > 0"
+        timeout: 10
+    
+    error_handling:
+      on_failure: "continue"  # Continue monitoring even if one check fails
+      retry_workflow: false
+
+  # News Sentiment Update Workflow
+  # Fetches and analyzes news (runs every 15-30 minutes)
+  news_sentiment_update:
+    name: "News Sentiment Update"
+    description: "Fetch and analyze news for sentiment scores"
+    version: "1.0"
+    
+    steps:
+      # Step 1: Fetch news articles
+      - step: "fetch_news"
+        agent: "sentiment"
+        input_mapping:
+          sources: "request.sources || ['all']"
+          lookback_hours: 24
+        timeout: 300
+        retry_config:
+          max_retries: 2
+        
+      # Step 2: Analyze sentiment (parallel per article)
+      - step: "analyze_articles"
+        agent: "sentiment"
+        input_mapping:
+          article: "fetch_news.articles[*]"
+        parallel: true
+        max_concurrent: 5
+        timeout: 600
+        retry_config:
+          max_retries: 1
+        
+      # Step 3: Aggregate sentiment scores
+      - step: "aggregate_sentiment"
+        agent: "sentiment"
+        input_mapping:
+          analyzed_articles: "analyze_articles.results"
+        timeout: 60
+        
+      # Step 4: Store in database
+      - step: "store_sentiment"
+        agent: "sentiment"
+        input_mapping:
+          sentiment_scores: "aggregate_sentiment.scores"
+        timeout: 30
+    
+    error_handling:
+      on_failure: "partial"  # Store partial results
+      retry_workflow: false
+
+# Global workflow settings
+settings:
+  default_timeout: 60
+  default_max_retries: 3
+  default_backoff: "exponential"
+  default_cache_ttl: 300
+  max_concurrent_workflows: 10
+  workflow_state_retention_days: 7
