@@ -1,8 +1,8 @@
 # Project Status and Changelog
 
-**Version**: 1.3.0  
+**Version**: 1.4.0  
 **Last Updated**: January 2025  
-**Current Status**: Phase 1 & Phase 2 Complete + Security & Performance Fixes
+**Current Status**: Phase 1, 2, 3 (4/6 agents), and Phase 5 (Orchestrator) Complete
 
 ---
 
@@ -22,8 +22,9 @@
 
 **Phase 1: Foundation & Infrastructure** - ✅ **100% Complete**  
 **Phase 2: Data Sources Integration** - ✅ **100% Complete** (Including Sentiment Analysis)  
-**Phase 3: Agent Implementation** - ⏳ **Pending**  
-**Phase 4-10: Remaining Phases** - ⏳ **Pending**
+**Phase 3: Agent Implementation** - ✅ **67% Complete** (4/6 agents: Librarian, Scraper, Strategy, Sentiment)  
+**Phase 5: Orchestration** - ✅ **100% Complete** (All 10 improvements + agent integration)  
+**Phase 4, 6-10: Remaining Phases** - ⏳ **Pending**
 
 ### System Readiness
 
@@ -33,8 +34,8 @@
 - ✅ **Configuration**: Complete configuration system
 - ✅ **Services**: Core services ready
 - ✅ **Tests**: Comprehensive test coverage for completed components
-- ⏳ **Agents**: Ready for implementation
-- ⏳ **Orchestration**: Pending agent implementation
+- ✅ **Agents**: 4/6 agents implemented (Librarian, Scraper, Strategy, Sentiment)
+- ✅ **Orchestration**: Complete with all 4 agents integrated
 
 ---
 
@@ -417,25 +418,32 @@ This will:
 - ✅ Validation utilities tests
 - ✅ Helper utilities tests
 
+### Completed Tests
+- ✅ News Sentiment Analyst unit tests (15+ test cases)
+- ✅ Strategy Specialist unit tests
+- ✅ Database Librarian unit tests
+- ✅ Data Scraper unit tests
+- ✅ Integration test scripts (quick, live, full)
+
 ### Pending Tests
-- ⏳ Agent tests (Phase 3)
 - ⏳ Service layer tests (Phase 4)
-- ⏳ Integration tests (Phase 8)
-- ⏳ End-to-end tests (Phase 8)
+- ⏳ Full end-to-end workflow tests (Phase 8)
 
 ---
 
 ## Known Issues
 
 ### Current Limitations
-- BSE RSS feed works with standard RSS parser (no special handling needed)
+- Librarian LLM SQL generation can be slow (>120s) - Ollama performance issue
 - Some RSS feeds may have rate limits - handled with rate limiting
-- FinBERT not yet integrated (optional optimization)
+- Telegram Assistant and Portfolio Guardian agents not yet implemented
 
 ### Future Improvements
-- Add FinBERT for faster sentiment analysis on simple articles
+- Optimize LLM performance (GPU acceleration, faster models)
+- Add Telegram Assistant agent
+- Add Portfolio Guardian agent
+- Implement full workflow execution
 - Add more news sources (international, social media)
-- Implement caching for article content
 - Add full-text search for articles
 
 ---
@@ -454,9 +462,10 @@ This will:
 - **Processing Time**: ~15-20 minutes/day
 
 ### Sentiment Analysis
-- **Model**: DeepSeek R1 7B (local)
-- **Processing Time**: ~2-5 seconds per article
-- **Daily Processing**: ~15-20 minutes for all articles
+- **Model**: Hybrid (FinBERT for simple, DeepSeek R1 7B for complex)
+- **Processing Time**: ~0.1-0.5s per article (FinBERT) or ~2-5s (LLM)
+- **Daily Processing**: ~10-15 minutes for 50 articles (with caching)
+- **Caching**: URL-based caching reduces redundant processing
 
 ---
 

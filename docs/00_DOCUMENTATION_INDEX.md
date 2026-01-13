@@ -1,7 +1,7 @@
 # Documentation Index
 
 **Project**: Agentic Stock Trading System  
-**Version**: 1.3.0  
+**Version**: 1.4.0  
 **Last Updated**: January 2025
 
 ---
@@ -188,62 +188,6 @@ This documentation set provides comprehensive guidance for **creating, maintaini
 
 ---
 
-### 14. [Agent-Orchestrator Integration](AGENT_ORCHESTRATOR_INTEGRATION.md)
-**Purpose**: Guide for integrating agents with orchestrator
-
-**Contents**:
-- Agent-orchestrator design principles
-- Contract-based communication
-- Agent implementation requirements
-- How orchestrator calls agents
-- Data flow patterns
-- Integration checklist
-- Testing strategies
-
-**Use When**:
-- Implementing agents (Phase 3)
-- Understanding agent-orchestrator interaction
-- Ensuring contract compliance
-- Testing agent integration
-- Debugging agent issues
-
----
-
-### 15. [Phase 3.1 Base Agent Complete](PHASE3_BASE_AGENT_COMPLETE.md)
-**Purpose**: Documentation for completed Base Agent Framework
-
-**Contents**:
-- Implementation summary
-- Key features
-- Usage examples
-- Test results
-- Integration with orchestrator
-
-**Use When**:
-- Understanding BaseAgent implementation
-- Implementing new agents
-- Testing agent framework
-- Reference for agent development
-
----
-
-### 16. [Phase 3.2 Database Librarian Complete](PHASE3_2_DATABASE_LIBRARIAN_COMPLETE.md)
-**Purpose**: Documentation for completed Database Librarian Agent
-
-**Contents**:
-- Implementation summary
-- NL to SQL translation
-- Schema awareness
-- Query safety validation
-- Usage examples
-- Test results
-
-**Use When**:
-- Understanding Database Librarian implementation
-- Using NL to SQL translation
-- Testing database queries
-- Reference for agent development
-
 ---
 
 ### 9. [Sentiment Analysis System](09_SENTIMENT_ANALYSIS_SYSTEM.md)
@@ -289,8 +233,6 @@ This documentation set provides comprehensive guidance for **creating, maintaini
 
 ---
 
-### 11. [Status and Changelog](11_STATUS_AND_CHANGELOG.md)
-
 ### 12. [News Fetching and Storage](12_NEWS_FETCHING_AND_STORAGE.md)
 **Purpose**: Complete guide to news fetching, storage, and per-source tracking
 
@@ -327,6 +269,10 @@ This documentation set provides comprehensive guidance for **creating, maintaini
 - Making commits and releases
 - Merging development to main
 - Creating version tags
+
+---
+
+### 11. [Status and Changelog](11_STATUS_AND_CHANGELOG.md)
 **Purpose**: Current project status, recent changes, and changelog
 
 **Contents**:
@@ -621,7 +567,8 @@ This documentation set provides comprehensive guidance for **creating, maintaini
 ---
 
 **Last Updated**: January 2025  
-**Current Status**: Phase 1 & Phase 2 Complete (Including Sentiment Analysis)  
+**Current Status**: Phase 1, 2, 3 (4/6 agents), and Phase 5 (Orchestrator) Complete  
+**Version**: 1.4.0  
 **Maintained By**: Development Team  
 **Feedback**: Update documentation as needed
 
@@ -639,28 +586,27 @@ This documentation set provides comprehensive guidance for **creating, maintaini
 - Core service layer
 - **Sentiment Repository** - Complete CRUD operations for news and sentiment
 
-**Phase 2.3: yfinance Integration** (100% Complete)
-- yfinance data fetcher with Nifty 500 support
-- Historical data backfill script
-- Advanced backfill options (force refresh, custom dates, update recent)
-- Batch processing with rate limiting
-- Comprehensive unit and integration tests
+**Phase 2: Data Sources Integration** (100% Complete)
+- yfinance integration with Nifty 500 support
+- News sources integration (12 RSS feeds)
+- Data source orchestrator
+- Comprehensive tests
 
-**Phase 2.4: Data Source Orchestrator** (Simplified - Complete)
-- Data source manager (yfinance only)
-- Data freshness validation
-- Batch fetching support
+**Phase 3: Agent Implementation** (67% Complete - 4/6 agents)
+- ✅ Base Agent Framework
+- ✅ Database Librarian (NL to SQL)
+- ✅ Data Scraper (multi-source)
+- ✅ Strategy Specialist (all 10 improvements)
+- ✅ News Sentiment Analyst (hybrid FinBERT + LLM)
+- ⏳ Telegram Assistant (pending)
+- ⏳ Portfolio Guardian (pending)
 
-**Phase 2.5: News Sources Integration** (100% Complete)
-- News fetcher module with RSS parsing (`data_sources/news_fetcher.py`)
-- 12 active news sources configured (Economic Times, Moneycontrol, Business Standard, BSE, etc.)
-- BSE corporate announcements RSS feed (replaces NSE API)
-- Article content extraction and deduplication
-- Per-source tracking for efficient incremental fetching
-- News source configuration (`config/news_sources.py`)
-- Database migration script for sentiment tables
-- News fetch and store script (`scripts/fetch_and_store_news.py`)
-- Comprehensive test suite (`tests/test_news_fetcher.py`)
+**Phase 5: Orchestration** (100% Complete)
+- Complete orchestrator with all 10 improvements
+- All 4 agents integrated
+- Agent-specific timeouts
+- Workflow registry
+- Contract validation
 
 ### 🚧 In Progress
 
@@ -670,31 +616,15 @@ This documentation set provides comprehensive guidance for **creating, maintaini
 
 - Phase 2.1: Shoonya API Integration
 - Phase 2.2: Upstox API Integration
-- Phase 3: Agent Implementation (including News Sentiment Analyst)
-- Phase 4-10: Remaining phases
+- Phase 3.5: Telegram Assistant Agent
+- Phase 3.7: Portfolio Guardian Agent
+- Phase 4: Service Layer
+- Phase 6-10: Remaining phases
 
-### 📝 Recent Changes (January 2025)
+### 📝 Recent Changes (v1.4.0 - January 2025)
 
-- ✅ **Phase 1 & 2 Complete**: All foundation and data source components implemented
-- ✅ **Sentiment Analysis Infrastructure**: Complete database models, repository, and news fetching
-- ✅ **News Fetcher Module**: RSS parsing for 12 active Indian financial news sources
-- ✅ **Sentiment Repository**: Full CRUD operations for articles, sentiment scores, and macro mappings
-- ✅ **Database Migration**: Script to create sentiment analysis tables
-- ✅ **News Source Configuration**: 12 sources configured (including BSE RSS feed)
-- ✅ **Per-Source Tracking**: Efficient incremental fetching with timestamp tracking
-- ✅ **News Fetch Script**: `fetch_and_store_news.py` with multiple operation modes
-- ✅ **Comprehensive Tests**: Test suite for news fetcher module
-- ✅ **Documentation**: Complete sentiment analysis and news fetching documentation
-- ✅ **Free Sources Guide**: Comprehensive guide to free news sources and sentiment tools
-- ✅ Added Sentiment Analysis System documentation
-- ✅ Designed News Sentiment Analyst agent (Agent #5)
-- ✅ Documented macro news propagation methodology
-- ✅ Added sentiment analysis database schema
-- ✅ Integrated sentiment analysis with Strategy Specialist
-- ✅ Replaced NSE API with BSE RSS feed for easier access
-- ✅ Added yfinance integration for historical data
-- ✅ Implemented Nifty 500 backfill script with advanced options
-- ✅ Added force refresh, custom date range, and update recent days features
-- ✅ Created comprehensive unit tests for data sources
-- ✅ Database migration script for sector/market_cap columns
-- ✅ Improved CSV parsing for Nifty 500 symbol list
+- ✅ **News Sentiment Analyst**: Complete implementation with hybrid FinBERT + LLM
+- ✅ **Orchestrator Integration**: All 4 agents integrated and tested
+- ✅ **Performance Optimizations**: Article caching, batch processing, timeouts
+- ✅ **Comprehensive Tests**: Unit and integration test suites
+- ✅ **Documentation**: Complete integration guides and release notes
