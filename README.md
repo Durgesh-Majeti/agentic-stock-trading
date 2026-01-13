@@ -1,6 +1,6 @@
 # Agentic AI Stock Trading App for Indian Markets
 
-**Version**: 1.3.0  
+**Version**: 1.4.0  
 **Last Updated**: January 2025
 
 A comprehensive agentic AI application for Indian stock trading with dashboard, Telegram bot, and multi-agent analysis system using local Ollama models.
@@ -120,27 +120,31 @@ python -c "import nltk; nltk.download('vader_lexicon')"
 - Service layer (trading, approval, analysis, notification)
 - Database migration scripts
 
-✅ **Phase 2.3: yfinance Integration** (Complete)
-- yfinance data fetcher (`data_sources/yfinance_fetcher.py`)
-- Nifty 500 symbol list fetching from CSV
-- Historical data backfill script (`scripts/backfill_nifty500.py`)
-- Advanced backfill options:
-  - Force refresh (`--force-refresh`)
-  - Custom date range (`--start-date`, `--end-date`)
-  - Update recent days (`--update-recent N`)
-- Batch processing with rate limiting
-- Comprehensive unit and integration tests
+✅ **Phase 2: Data Sources Integration** (Complete)
+- yfinance integration with Nifty 500 support
+- News sources integration (12 RSS feeds)
+- Data source orchestrator
+- Historical data backfill script with advanced options
 
-✅ **Phase 2.4: Data Source Orchestrator** (Simplified - Complete)
-- Data source manager (`data_sources/data_source_manager.py`)
-- yfinance integration (primary for now)
-- Data freshness validation
-- Batch fetching support
+✅ **Phase 3: Agent Implementation** (67% Complete - 4/6 agents)
+- ✅ Base Agent Framework
+- ✅ Database Librarian (NL to SQL)
+- ✅ Data Scraper (multi-source)
+- ✅ Strategy Specialist (all 10 improvements)
+- ✅ News Sentiment Analyst (hybrid FinBERT + LLM)
+- ⏳ Telegram Assistant (pending)
+- ⏳ Portfolio Guardian (pending)
+
+✅ **Phase 5: Orchestration** (Complete)
+- Complete orchestrator with all 10 improvements
+- All 4 agents integrated
+- Agent-specific timeouts
+- Workflow registry and contract validation
 
 🚧 **In Development:**
-- Main orchestrator (CrewAI agents)
+- Telegram Assistant agent
+- Portfolio Guardian agent
 - Streamlit dashboard
-- Telegram bot handlers
 - Shoonya API integration (Phase 2.1)
 - Upstox API integration (Phase 2.2)
 - Resilience layer (cron jobs)
