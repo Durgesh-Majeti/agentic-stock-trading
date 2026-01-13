@@ -69,8 +69,27 @@ class RateLimiter:
                 wait_time = tokens_needed / self.rate
                 logger.debug(f"Rate limit: waiting {wait_time:.2f}s for {tokens_needed} tokens")
                 await asyncio.sleep(wait_time)
-                # After waiting, we should have enough tokens
-                self.tokens = 0
+                
+                # After waiting, recalculate tokens based on elapsed time
+                now_after_sleep = time.monotonic()
+                elapsed_after_sleep = now_after_sleep - self.last_update
+                
+                # Calculate tokens added during sleep period
+                elapsed_ms_after_sleep = int(elapsed_after_sleep * 1000)
+                tokens_added_during_sleep = (elapsed_ms_after_sleep * self.rate) // 1000
+                
+                # Refill tokens based on sleep period
+                self.tokens = min(
+                    self.capacity,
+                    self.tokens + tokens_added_during_sleep
+                )
+                self.last_update = now_after_sleep
+                
+                # Now deduct the requested tokens
+                self.tokens -= tokens
+                # Ensure non-negative
+                if self.tokens < 0:
+                    self.tokens = 0
             else:
                 # Deduct tokens
                 self.tokens -= tokens

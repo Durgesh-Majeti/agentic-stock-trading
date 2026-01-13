@@ -85,10 +85,45 @@ class TradingOrchestrator:
         logger.info(f"Orchestrator initialized with {len(self.agents)} agents")
     
     def _create_default_agents(self) -> Dict[str, Any]:
-        """Factory method for default agents."""
-        # This will be implemented when agents are created
-        # For now, return empty dict
-        return {}
+        """
+        Factory method for default agents.
+        
+        Creates all available agents and returns them as a dictionary.
+        """
+        agents = {}
+        
+        try:
+            from agents.database_librarian import DatabaseLibrarian
+            from agents.data_scraper import DataScraper
+            from agents.strategy_specialist import StrategySpecialist
+            from agents.news_sentiment_analyst import NewsSentimentAnalyst
+            
+            # Initialize all agents
+            logger.info("Initializing agents...")
+            
+            agents["librarian"] = DatabaseLibrarian()
+            logger.info("✅ Database Librarian initialized")
+            
+            agents["scraper"] = DataScraper()
+            logger.info("✅ Data Scraper initialized")
+            
+            agents["strategy"] = StrategySpecialist()
+            logger.info("✅ Strategy Specialist initialized")
+            
+            agents["sentiment"] = NewsSentimentAnalyst()
+            logger.info("✅ News Sentiment Analyst initialized")
+            
+            # Note: Telegram Assistant and Portfolio Guardian are not yet implemented
+            # They will be added when implemented
+            
+            logger.info(f"Successfully initialized {len(agents)} agents")
+            
+        except ImportError as e:
+            logger.error(f"Failed to import agents: {e}")
+        except Exception as e:
+            logger.error(f"Error initializing agents: {e}")
+        
+        return agents
     
     def _load_agent_contracts(self) -> Dict[str, Any]:
         """
@@ -265,8 +300,14 @@ class TradingOrchestrator:
         
         try:
             # Call with circuit breaker and timeout protection
-            # Default timeout: 60 seconds per agent call
-            agent_timeout = 60.0
+            # Agent-specific timeouts (sentiment analysis can take longer)
+            agent_timeouts = {
+                "sentiment": 300.0,  # 5 minutes for sentiment analysis (fetches + processes news)
+                "strategy": 180.0,   # 3 minutes for strategy analysis (LLM calls)
+                "librarian": 120.0,  # 2 minutes for database queries (LLM SQL generation can be slow)
+                "scraper": 120.0,    # 2 minutes for data fetching
+            }
+            agent_timeout = agent_timeouts.get(agent_name, 60.0)  # Default 60s
             
             output = await asyncio.wait_for(
                 circuit_breaker.call(_call),

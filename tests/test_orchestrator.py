@@ -105,21 +105,29 @@ class TestTradingOrchestrator:
         # Create a slow agent that returns proper output format
         def slow_process(input_data):
             import time
-            time.sleep(2)  # Sleep longer than timeout (sync sleep)
+            time.sleep(0.1)  # Small delay for sync process
             return {"sql": "SELECT *", "results": [], "count": 0}
         
         mock_agents["librarian"].process = slow_process
         
-        # Mock cache manager to simulate slow call
+        # Mock cache manager to simulate slow call that exceeds timeout
         async def slow_get_or_call(agent_name, input_data, call_func):
-            await asyncio.sleep(2)  # Simulate slow operation
+            await asyncio.sleep(2)  # Sleep longer than test timeout
             return await call_func(input_data)
         
         orchestrator.cache_manager.get_or_call = slow_get_or_call
         
+        # Patch asyncio.wait_for to use a shorter timeout for testing
+        # We'll intercept the wait_for call and use 0.5 seconds instead of 60
+        original_wait_for = asyncio.wait_for
+        async def patched_wait_for(coro, timeout=None):
+            # Override timeout to 0.5 seconds for testing
+            return await original_wait_for(coro, timeout=0.5)
+        
         # Should raise TimeoutError
-        with pytest.raises(TimeoutError):
-            await orchestrator._call_agent("librarian", {"query": "test"})
+        with patch('orchestrator.orchestrator.asyncio.wait_for', patched_wait_for):
+            with pytest.raises(TimeoutError):
+                await orchestrator._call_agent("librarian", {"query": "test"})
     
     def test_contract_loading(self, orchestrator):
         """Test that contracts are loaded."""

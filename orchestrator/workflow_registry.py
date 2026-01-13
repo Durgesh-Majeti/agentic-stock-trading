@@ -52,6 +52,8 @@ class WorkflowRegistry:
             
         except Exception as e:
             logger.error(f"Error loading workflows: {e}")
+            import traceback
+            logger.debug(traceback.format_exc())
     
     def _parse_workflow(
         self,
@@ -72,20 +74,52 @@ class WorkflowRegistry:
         
         steps = []
         for step_data in workflow_data.get("steps", []):
-            step = WorkflowStep(
-                step=step_data["step"],
-                agent=step_data["agent"],
-                input_mapping=step_data.get("input_mapping", {}),
-                parallel=step_data.get("parallel", False),
-                max_concurrent=step_data.get("max_concurrent", 5),
-                rate_limit=step_data.get("rate_limit", 10),
-                timeout=step_data.get("timeout"),
-                cache=step_data.get("cache", True),
-                cache_ttl=step_data.get("cache_ttl"),
-                conditions=step_data.get("conditions"),
-                filter=step_data.get("filter")
-            )
-            steps.append(step)
+            try:
+                # Parse retry_config if present
+                retry_config = None
+                if "retry_config" in step_data and isinstance(step_data["retry_config"], dict):
+                    retry_data = step_data["retry_config"]
+                    retry_config = RetryConfig(
+                        max_retries=retry_data.get("max_retries", 3),
+                        backoff=retry_data.get("backoff", "exponential"),
+                        initial_delay=retry_data.get("initial_delay", 1.0)
+                    )
+                
+                # Ensure required fields exist
+                if "step" not in step_data:
+                    logger.warning(f"Step missing 'step' field in workflow '{workflow_name}', skipping")
+                    continue
+                
+                # Handle workflow references (sub-workflows)
+                if "workflow" in step_data:
+                    logger.debug(f"Step '{step_data['step']}' references workflow '{step_data['workflow']}' - sub-workflow support not yet implemented, skipping")
+                    continue
+                
+                if "agent" not in step_data:
+                    logger.warning(f"Step '{step_data.get('step', 'unknown')}' missing 'agent' field in workflow '{workflow_name}', skipping")
+                    continue
+                
+                step = WorkflowStep(
+                    step=step_data["step"],
+                    agent=step_data["agent"],
+                    input_mapping=step_data.get("input_mapping", {}),
+                    parallel=step_data.get("parallel", False),
+                    max_concurrent=step_data.get("max_concurrent", 5),
+                    rate_limit=step_data.get("rate_limit", 10),
+                    retry_config=retry_config,
+                    timeout=step_data.get("timeout"),
+                    cache=step_data.get("cache", True),
+                    cache_ttl=step_data.get("cache_ttl"),
+                    conditions=step_data.get("conditions"),
+                    filter=step_data.get("filter")
+                )
+                steps.append(step)
+            except KeyError as e:
+                logger.error(f"Missing required field in step: {e}, workflow: {workflow_name}")
+                continue
+            except Exception as e:
+                logger.error(f"Error parsing step in workflow '{workflow_name}': {e}")
+                continue
         
         error_handling = ErrorHandling(
             on_failure=workflow_data.get("error_handling", {}).get("on_failure", "partial"),

@@ -91,6 +91,7 @@ class CacheManager:
         ttl = ttl or self.default_ttl
         
         # Thread-safe cache access
+        cache_miss = False
         async with self._lock:
             # Check cache
             if cache_key in self.cache:
@@ -110,10 +111,17 @@ class CacheManager:
                     # Expired - remove
                     logger.debug(f"Cache expired for {agent_name}")
                     del self.cache[cache_key]
+                    cache_miss = True
+            else:
+                # Key not in cache
+                cache_miss = True
+            
+            # Increment miss counter inside lock for thread safety
+            if cache_miss:
+                self.misses += 1
+                logger.debug(f"Cache miss for {agent_name}")
         
-        # Cache miss - call agent
-        self.misses += 1
-        logger.debug(f"Cache miss for {agent_name}")
+        # Cache miss - call agent (outside lock to avoid blocking)
         
         # Handle both sync and async call_func
         if asyncio.iscoroutinefunction(call_func):
